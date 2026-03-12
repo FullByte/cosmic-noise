@@ -266,24 +266,27 @@ progress {
 }
 
 .io-switch {
-  }
-  .io-switch-wrap {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-top: 0;
-    margin-bottom: 0;
-  }
   width: 100%;
   max-width: 190px;
   position: relative;
   display: inline-grid;
   gap: 6px;
   justify-items: center;
+  -webkit-user-select: none;
   user-select: none;
   min-height: 78px;
-  align-content: center;
-  margin-top: 32px;
+  align-content: start;
+  margin-top: 0;
+}
+
+.io-switch-wrap {
+  position: relative;
+  width: 110px;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
 }
 
 .io-label {
@@ -303,10 +306,13 @@ progress {
 
 .io-switch input {
   position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
   opacity: 0;
-  pointer-events: none;
-  width: 0;
-  height: 0;
+  cursor: pointer;
+  z-index: 1;
 }
 
 .io-track {

@@ -1,2 +1,5 @@
 # Local tools
 DataAnalysisExpert/
+
+# Cursor hooks
+.cursor/hooks/
