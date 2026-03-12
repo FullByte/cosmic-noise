@@ -1,0 +1,92 @@
+export const STAGES = [
+  {
+    id: 1,
+    name: { de: "Stufe 1", en: "Stage 1" },
+    target: {
+      power: true,
+      phase: false,
+      freq: 34,
+      fine: -8,
+      gain: 42,
+      dial: 173,
+      routes: ["ANT->PRE", "PRE->DEC"],
+    },
+    tolerance: { freq: 16, fine: 18, gain: 18, dial: 220 },
+    message: {
+      de: "ARCHIV-SIGNAL ERKANNT. SCHLUESSELRAHMEN INSTABIL.",
+      en: "ARCHIVE SIGNAL DETECTED. KEY FRAME UNSTABLE.",
+    },
+  },
+  {
+    id: 2,
+    name: { de: "Stufe 2", en: "Stage 2" },
+    target: {
+      power: true,
+      phase: true,
+      freq: 59,
+      fine: 13,
+      gain: 67,
+      dial: 406,
+      routes: ["ANT->FLT", "FLT->PRE", "PRE->DEC"],
+    },
+    tolerance: { freq: 13, fine: 14, gain: 14, dial: 160 },
+    message: {
+      de: "PRIMZAHLCLUSTER PASSEN. RESONANZFILTER ONLINE.",
+      en: "PRIME CLUSTERS ALIGN. RESONANCE FILTER ONLINE.",
+    },
+  },
+  {
+    id: 3,
+    name: { de: "Stufe 3", en: "Stage 3" },
+    target: {
+      power: true,
+      phase: true,
+      freq: 72,
+      fine: -19,
+      gain: 58,
+      dial: 682,
+      routes: ["ANT->PRE", "PRE->FLT", "FLT->DEC"],
+    },
+    tolerance: { freq: 10, fine: 11, gain: 11, dial: 95 },
+    message: {
+      de: "RUCKKOPPLUNG ERKANNT. INFRASTRUKTUR-KOMPATIBILITAT STEIGT.",
+      en: "FEEDBACK DETECTED. INFRASTRUCTURE COMPATIBILITY RISING.",
+    },
+  },
+  {
+    id: 4,
+    name: { de: "Stufe 4", en: "Stage 4" },
+    target: {
+      power: true,
+      phase: false,
+      freq: 16,
+      fine: 24,
+      gain: 76,
+      dial: 931,
+      routes: ["ANT->FLT", "FLT->DEC"],
+    },
+    tolerance: { freq: 9, fine: 9, gain: 10, dial: 64 },
+    message: {
+      de: "AUTONOME SYNCHRONISATION BEGINNT. NACHRICHT FAST KLAR.",
+      en: "AUTONOMOUS SYNCHRONIZATION STARTS. MESSAGE NEARLY CLEAR.",
+    },
+  },
+  {
+    id: 5,
+    name: { de: "Stufe 5", en: "Stage 5" },
+    target: {
+      power: true,
+      phase: true,
+      freq: 47,
+      fine: 3,
+      gain: 51,
+      dial: 257,
+      routes: ["ANT->PRE", "PRE->FLT", "FLT->DEC", "DEC->ANT"],
+    },
+    tolerance: { freq: 7, fine: 7, gain: 8, dial: 42 },
+    message: {
+      de: "HANDSHAKE BESTANDEN. PHASE ZWEI INITIIERT.",
+      en: "HANDSHAKE ACCEPTED. PHASE TWO INITIATED.",
+    },
+  },
+];

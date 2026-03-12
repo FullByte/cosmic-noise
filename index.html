@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cosmic Noise Decoder</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./css/style.css" />
+  </head>
+  <body>
+    <div class="bg-grid" aria-hidden="true"></div>
+    <div class="app-shell">
+      <header class="topbar panel">
+        <div class="brand-wrap">
+          <p class="brand-kicker" data-i18n="brandKicker">ANALOG INTERCEPT NODE</p>
+          <h1 class="brand-title" data-i18n="brandTitle">White Noise Cipher Console</h1>
+        </div>
+        <div class="topbar-actions">
+          <button id="lang-toggle" class="small-btn" type="button">DE</button>
+          <button id="audio-toggle" class="small-btn" type="button" data-i18n="audioOff">Audio: Off</button>
+          <button id="reset-progress" class="small-btn danger" type="button" data-i18n="resetProgress">Reset</button>
+        </div>
+      </header>
+
+      <main class="main-layout">
+        <section class="signal-zone panel" aria-label="Signal Visualization">
+          <div class="section-head">
+            <h2 data-i18n="signalView">Signal View</h2>
+            <div class="meter-wrap">
+              <label for="confidence-meter" data-i18n="confidence">Confidence</label>
+              <progress id="confidence-meter" max="100" value="0"></progress>
+              <span id="confidence-label">0%</span>
+            </div>
+          </div>
+          <canvas id="signal-canvas" width="960" height="480"></canvas>
+          <div class="clarity-text">
+            <span data-i18n="clarity">Clarity</span>
+            <strong id="clarity-label">0%</strong>
+          </div>
+        </section>
+
+        <section class="control-zone panel" aria-label="Control Rack">
+          <div class="section-head">
+            <h2 data-i18n="controlRack">Control Rack</h2>
+            <span class="stage-chip" id="stage-chip">Stage 1</span>
+          </div>
+
+          <div class="control-group">
+            <p class="group-title" data-i18n="switches">Switches</p>
+            <label class="switch-row">
+              <span data-i18n="powerSwitch">Power</span>
+              <input id="power-switch" type="checkbox" />
+            </label>
+            <label class="switch-row">
+              <span data-i18n="phaseSwitch">Phase Invert</span>
+              <input id="phase-switch" type="checkbox" />
+            </label>
+          </div>
+
+          <div class="control-group">
+            <p class="group-title" data-i18n="knobs">Knobs</p>
+            <label>
+              <span data-i18n="freqKnob">Frequency</span>
+              <input id="freq-knob" type="range" min="0" max="100" value="50" />
+              <strong id="freq-value">50</strong>
+            </label>
+            <label>
+              <span data-i18n="fineKnob">Fine Tune</span>
+              <input id="fine-knob" type="range" min="-50" max="50" value="0" />
+              <strong id="fine-value">0</strong>
+            </label>
+            <label>
+              <span data-i18n="gainKnob">Gain</span>
+              <input id="gain-knob" type="range" min="0" max="100" value="40" />
+              <strong id="gain-value">40</strong>
+            </label>
+          </div>
+
+          <div class="control-group">
+            <p class="group-title" data-i18n="dial">Number Dial</p>
+            <div class="dial-wrap">
+              <button id="dial-down" class="dial-btn" type="button">-</button>
+              <output id="dial-value" for="dial-down dial-up">000</output>
+              <button id="dial-up" class="dial-btn" type="button">+</button>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <p class="group-title" data-i18n="patchPanel">Patch Panel</p>
+            <div class="ports" id="port-list">
+              <span class="port" data-port="ANT">ANT</span>
+              <span class="port" data-port="PRE">PRE</span>
+              <span class="port" data-port="FLT">FLT</span>
+              <span class="port" data-port="DEC">DEC</span>
+            </div>
+            <div class="patch-controls">
+              <select id="patch-from" aria-label="Patch from">
+                <option value="ANT">ANT</option>
+                <option value="PRE">PRE</option>
+                <option value="FLT">FLT</option>
+                <option value="DEC">DEC</option>
+              </select>
+              <span>-></span>
+              <select id="patch-to" aria-label="Patch to">
+                <option value="ANT">ANT</option>
+                <option value="PRE">PRE</option>
+                <option value="FLT">FLT</option>
+                <option value="DEC">DEC</option>
+              </select>
+              <button id="patch-add" class="small-btn" type="button" data-i18n="patchAdd">Plug</button>
+            </div>
+            <ul id="patch-list" class="patch-list"></ul>
+          </div>
+
+          <div class="actions">
+            <button id="scan-btn" class="primary-btn" type="button" data-i18n="scanSignal">Scan Signal</button>
+            <button id="clear-patches" class="small-btn" type="button" data-i18n="clearPatches">Clear Cables</button>
+          </div>
+        </section>
+
+        <section class="output-zone panel" aria-label="Decoded Output">
+          <div class="section-head">
+            <h2 data-i18n="decodedOutput">Decoded Output</h2>
+            <span id="attempt-label">0</span>
+          </div>
+          <pre id="signal-output" class="output-screen"></pre>
+          <div id="hint-output" class="hint-box"></div>
+          <div class="actions">
+            <button id="next-stage" class="primary-btn" type="button" data-i18n="nextStage">Next Stage</button>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div id="tutorial-overlay" class="tutorial-overlay" role="dialog" aria-modal="true">
+      <div class="tutorial-card panel">
+        <h3 id="tutorial-title"></h3>
+        <p id="tutorial-body"></p>
+        <div class="actions">
+          <button id="tutorial-prev" class="small-btn" type="button" data-i18n="tutorialPrev">Back</button>
+          <button id="tutorial-next" class="primary-btn" type="button" data-i18n="tutorialNext">Next</button>
+          <button id="tutorial-skip" class="small-btn danger" type="button" data-i18n="tutorialSkip">Skip</button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="./js/main.js"></script>
+  </body>
+</html>
