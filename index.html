@@ -92,16 +92,16 @@
             </label>
           </div>
 
-          <div class="control-group">
+          <div class="control-group" id="dial-group">
             <p class="group-title" data-i18n="dial">Number Dial</p>
             <div class="dial-wrap">
               <button id="dial-down" class="dial-btn" type="button">-</button>
-              <output id="dial-value" for="dial-down dial-up">000</output>
+              <input id="dial-value" type="number" min="0" max="999" step="1" value="0" aria-label="Number dial value" />
               <button id="dial-up" class="dial-btn" type="button">+</button>
             </div>
           </div>
 
-          <div class="control-group">
+          <div class="control-group" id="patch-group">
             <p class="group-title" data-i18n="patchPanel">Patch Panel</p>
             <div class="ports" id="port-list">
               <span class="port" data-port="ANT">ANT</span>
@@ -129,7 +129,6 @@
           </div>
 
           <div class="actions">
-            <button id="scan-btn" class="primary-btn" type="button" data-i18n="scanSignal">Scan Signal</button>
             <button id="clear-patches" class="small-btn" type="button" data-i18n="clearPatches">Clear Cables</button>
           </div>
         </section>
@@ -147,9 +146,6 @@
           </div>
           <pre id="signal-output" class="output-screen"></pre>
           <div id="hint-output" class="hint-box"></div>
-          <div class="actions">
-            <button id="next-stage" class="primary-btn" type="button" data-i18n="nextStage">Next Stage</button>
-          </div>
         </section>
       </main>
     </div>
@@ -162,6 +158,16 @@
           <button id="tutorial-prev" class="small-btn" type="button" data-i18n="tutorialPrev">Back</button>
           <button id="tutorial-next" class="primary-btn" type="button" data-i18n="tutorialNext">Next</button>
           <button id="tutorial-skip" class="small-btn danger" type="button" data-i18n="tutorialSkip">Skip</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="stage-overlay" class="tutorial-overlay" role="dialog" aria-modal="true">
+      <div class="tutorial-card panel">
+        <h3 id="stage-title"></h3>
+        <p id="stage-body"></p>
+        <div class="actions">
+          <button id="stage-continue" class="primary-btn" type="button" data-i18n="stageContinue">Verstanden</button>
         </div>
       </div>
     </div>

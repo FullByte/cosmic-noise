@@ -8,13 +8,17 @@ export const STAGES = [
       freq: 34,
       fine: -8,
       gain: 42,
-      dial: 173,
-      routes: ["ANT->PRE", "PRE->DEC"],
+      dial: 0,
+      routes: [],
     },
     tolerance: { freq: 16, fine: 18, gain: 18, dial: 220 },
     message: {
       de: "ARCHIV-SIGNAL ERKANNT, SCHL\u00dcSSELRAHMEN INSTABIL. TELEMETRIE ZEIGT: FEHLER SIND FR\u00dcH SICHTBAR, WERDEN ABER OFT IGNORIERT. WEISHEIT: WAS DU NICHT MISST, KANNST DU NICHT VERBESSERN.",
       en: "ARCHIVE SIGNAL DETECTED, KEY FRAME UNSTABLE. TELEMETRY SHOWS THIS: FAILURES APPEAR EARLY BUT ARE OFTEN IGNORED. WISDOM: WHAT YOU DO NOT MEASURE, YOU CANNOT IMPROVE.",
+    },
+    briefing: {
+      de: "Stufe 1: Grundkalibrierung. Zahlenwahl und Patchfeld sind deaktiviert. Konzentriere dich auf Strom, Phase und die drei Regler, um Stabilitat aufzubauen.",
+      en: "Stage 1: Basic calibration. Number dial and patch panel are disabled. Focus on power, phase, and the three knobs to build signal stability.",
     },
     codeword: { de: "TELEMETRIE", en: "TELEMETRY" },
   },
@@ -28,12 +32,16 @@ export const STAGES = [
       fine: 13,
       gain: 67,
       dial: 406,
-      routes: ["ANT->FLT", "FLT->PRE", "PRE->DEC"],
+      routes: [],
     },
     tolerance: { freq: 13, fine: 14, gain: 14, dial: 160 },
     message: {
       de: "PRIMZAHLCLUSTER PASSEN, RESONANZFILTER ONLINE. DIE PIPELINE BLEIBT STABIL, WENN SCHNITTSTELLEN KLAR UND KOPPLUNG NIEDRIG BLEIBT. WEISHEIT: EINFACHE GRENZEN RETTEN KOMPLEXE SYSTEME.",
       en: "PRIME CLUSTERS ALIGN, RESONANCE FILTER ONLINE. THE PIPELINE STAYS STABLE WHEN INTERFACES ARE CLEAR AND COUPLING REMAINS LOW. WISDOM: SIMPLE BOUNDARIES SAVE COMPLEX SYSTEMS.",
+    },
+    briefing: {
+      de: "Stufe 2: Feinjustierung mit Zahlenwahl. Das Patchfeld bleibt gesperrt. Nutze die Zahlenwahl, um die Tragerspur prazise zu treffen.",
+      en: "Stage 2: Fine calibration with number dial. Patch panel remains locked. Use the dial for precise carrier alignment.",
     },
     codeword: { de: "PIPELINE", en: "PIPELINE" },
   },
@@ -47,12 +55,16 @@ export const STAGES = [
       fine: -19,
       gain: 58,
       dial: 682,
-      routes: ["ANT->PRE", "PRE->FLT", "FLT->DEC"],
+      routes: ["PRE->FLT"],
     },
     tolerance: { freq: 10, fine: 11, gain: 11, dial: 95 },
     message: {
       de: "R\u00dcCKKOPPLUNG ERKANNT, INFRASTRUKTUR-KOMPATIBILIT\u00c4T STEIGT. REPLIKATION GL\u00c4TTET LASTSPITZEN UND VERK\u00dcRZT WIEDERHERSTELLUNG. WEISHEIT: REDUNDANZ IST KEIN LUXUS, SONDERN BETRIEBSSICHERHEIT.",
       en: "FEEDBACK DETECTED, INFRASTRUCTURE COMPATIBILITY RISING. REPLICATION SMOOTHS TRAFFIC SPIKES AND SHORTENS RECOVERY. WISDOM: REDUNDANCY IS NOT LUXURY, IT IS OPERATIONAL SAFETY.",
+    },
+    briefing: {
+      de: "Stufe 3: Verkabelung freigeschaltet, aber auf ein Kabel begrenzt. Wale den einen Pfad mit Bedacht und kombiniere ihn mit der Zahlenwahl.",
+      en: "Stage 3: Patching unlocked, but limited to one cable. Choose that single route carefully and combine it with dial tuning.",
     },
     codeword: { de: "REPLIKATION", en: "REPLICATION" },
   },
@@ -73,6 +85,10 @@ export const STAGES = [
       de: "AUTONOME SYNCHRONISATION BEGINNT, NACHRICHT FAST KLAR. VERSCHL\u00dcSSELUNG SCH\u00dcTZT VERTRAUEN, ABER SCHL\u00dcSSELHYGIENE SCH\u00dcTZT DIE REALIT\u00c4T. WEISHEIT: SICHERHEIT IST EIN PROZESS, KEIN SCHALTER.",
       en: "AUTONOMOUS SYNCHRONIZATION STARTS, MESSAGE NEARLY CLEAR. ENCRYPTION PROTECTS TRUST, BUT KEY HYGIENE PROTECTS REALITY. WISDOM: SECURITY IS A PROCESS, NOT A SWITCH.",
     },
+    briefing: {
+      de: "Stufe 4: Volle Kontrolle aktiv. Zahlenwahl und Patchfeld sind komplett freigegeben. Nutze mehrere Kabel fur gezielte Signatur-Formung.",
+      en: "Stage 4: Full control unlocked. Number dial and patch panel are fully available. Use multiple cables for targeted signature shaping.",
+    },
     codeword: { de: "VERSCHL\u00dcSSELUNG", en: "ENCRYPTION" },
   },
   {
@@ -91,6 +107,10 @@ export const STAGES = [
     message: {
       de: "HANDSHAKE BESTANDEN, PHASE ZWEI INITIIERT. AUTOMATISIERUNG ERH\u00d6HT TEMPO, DOCH VERANTWORTUNG MUSS IM DESIGN VERANKERT BLEIBEN. WEISHEIT: SKALIERUNG OHNE ETHIK VERVIELFACHT FEHLER.",
       en: "HANDSHAKE ACCEPTED, PHASE TWO INITIATED. AUTOMATION INCREASES SPEED, YET RESPONSIBILITY MUST STAY EMBEDDED IN DESIGN. WISDOM: SCALING WITHOUT ETHICS MULTIPLIES MISTAKES.",
+    },
+    briefing: {
+      de: "Stufe 5: Endphase. Alle Werkzeuge sind aktiv und die Toleranzen sind eng. Jeder Regler beeinflusst den finalen Lock deutlich.",
+      en: "Stage 5: Final phase. All tools are active and tolerances are tight. Every control has strong impact on the final lock.",
     },
     codeword: { de: "AUTOMATISIERUNG", en: "AUTOMATION" },
   },

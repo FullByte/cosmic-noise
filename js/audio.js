@@ -17,6 +17,37 @@ function clamp01(value) {
   return Math.max(0, Math.min(1, value));
 }
 
+function lerp(a, b, t) {
+  return a + (b - a) * t;
+}
+
+function mixFromConfidence(confidence) {
+  const c = Math.max(0, Math.min(100, confidence || 0));
+
+  const points = [
+    { c: 0, noise: 1.0, music: 0.0 },
+    { c: 10, noise: 1.0, music: 0.0 },
+    { c: 25, noise: 1.0, music: 0.1 },
+    { c: 50, noise: 0.75, music: 0.25 },
+    { c: 75, noise: 0.35, music: 0.65 },
+    { c: 100, noise: 0.1, music: 0.9 },
+  ];
+
+  for (let i = 0; i < points.length - 1; i += 1) {
+    const a = points[i];
+    const b = points[i + 1];
+    if (c >= a.c && c <= b.c) {
+      const t = (c - a.c) / (b.c - a.c || 1);
+      return {
+        noise: clamp01(lerp(a.noise, b.noise, t)),
+        music: clamp01(lerp(a.music, b.music, t)),
+      };
+    }
+  }
+
+  return c < 0 ? { noise: 1, music: 0 } : { noise: 0.1, music: 0.9 };
+}
+
 function createNoiseNode(context) {
   const buffer = context.createBuffer(1, context.sampleRate * 2, context.sampleRate);
   const data = buffer.getChannelData(0);
@@ -130,9 +161,9 @@ export function updateAudio({ enabled, confidence, stageIndex }) {
     return;
   }
 
-  const confidenceRatio = clamp01((confidence || 0) / 100);
-  const targetSongGain = enabled ? confidenceRatio : 0;
-  const targetNoiseGain = enabled ? 1 - confidenceRatio : 0;
+  const mix = mixFromConfidence(confidence);
+  const targetSongGain = enabled ? mix.music : 0;
+  const targetNoiseGain = enabled ? mix.noise : 0;
 
   if (enabled && (!lastEnabled || lastStageIndex !== stageIndex)) {
     switchSong(stageIndex, true);
@@ -149,9 +180,9 @@ export function updateAudio({ enabled, confidence, stageIndex }) {
   noiseGain.gain.setTargetAtTime(targetNoiseGain, audioContext.currentTime, 0.08);
   songGain.gain.setTargetAtTime(targetSongGain, audioContext.currentTime, 0.08);
 
-  const frequency = 520 + targetNoiseGain * 980;
+  const frequency = 420 + targetNoiseGain * 1200;
   filter.frequency.setTargetAtTime(frequency, audioContext.currentTime, 0.08);
-  filter.Q.setTargetAtTime(1.4 + targetNoiseGain * 5.2, audioContext.currentTime, 0.08);
+  filter.Q.setTargetAtTime(1.8 + targetNoiseGain * 6.2, audioContext.currentTime, 0.08);
 
   lastEnabled = enabled;
   lastStageIndex = stageIndex;

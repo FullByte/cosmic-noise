@@ -32,7 +32,7 @@ function highlightPorts(patches) {
   });
 }
 
-export function wireControls({ state, onChange, onScan, onAddPatch, onClearPatches, onNextStage, onToggleLang, onToggleAudio, onResetProgress }) {
+export function wireControls({ state, onChange, onAddPatch, onClearPatches, onToggleLang, onToggleAudio, onResetProgress }) {
   const powerSwitch = document.getElementById("power-switch");
   const phaseSwitch = document.getElementById("phase-switch");
   const freqKnob = document.getElementById("freq-knob");
@@ -45,18 +45,48 @@ export function wireControls({ state, onChange, onScan, onAddPatch, onClearPatch
   const dialValue = document.getElementById("dial-value");
   const dialDown = document.getElementById("dial-down");
   const dialUp = document.getElementById("dial-up");
+  const dialGroup = document.getElementById("dial-group");
 
   const patchFrom = document.getElementById("patch-from");
   const patchTo = document.getElementById("patch-to");
   const patchAdd = document.getElementById("patch-add");
   const patchList = document.getElementById("patch-list");
   const patchClear = document.getElementById("clear-patches");
+  const patchGroup = document.getElementById("patch-group");
 
-  const scanBtn = document.getElementById("scan-btn");
-  const nextStageBtn = document.getElementById("next-stage");
   const langBtn = document.getElementById("lang-toggle");
   const audioBtn = document.getElementById("audio-toggle");
   const resetBtn = document.getElementById("reset-progress");
+
+  function stagePolicy() {
+    const id = state.stageIndex + 1;
+    if (id === 1) {
+      return { dialEnabled: false, patchEnabled: false, maxPatches: 0 };
+    }
+    if (id === 2) {
+      return { dialEnabled: true, patchEnabled: false, maxPatches: 0 };
+    }
+    if (id === 3) {
+      return { dialEnabled: true, patchEnabled: true, maxPatches: 1 };
+    }
+    return { dialEnabled: true, patchEnabled: true, maxPatches: null };
+  }
+
+  function applyStagePolicy() {
+    const policy = stagePolicy();
+    const reachedPatchLimit = policy.maxPatches !== null && state.controls.patches.length >= policy.maxPatches;
+
+    dialGroup.classList.toggle("locked", !policy.dialEnabled);
+    dialValue.disabled = !policy.dialEnabled;
+    dialDown.disabled = !policy.dialEnabled;
+    dialUp.disabled = !policy.dialEnabled;
+
+    patchGroup.classList.toggle("locked", !policy.patchEnabled);
+    patchFrom.disabled = !policy.patchEnabled || reachedPatchLimit;
+    patchTo.disabled = !policy.patchEnabled || reachedPatchLimit;
+    patchAdd.disabled = !policy.patchEnabled || reachedPatchLimit;
+    patchClear.disabled = !policy.patchEnabled;
+  }
 
   function syncControls() {
     powerSwitch.checked = state.controls.power;
@@ -67,9 +97,10 @@ export function wireControls({ state, onChange, onScan, onAddPatch, onClearPatch
     freqValue.textContent = String(state.controls.freq);
     fineValue.textContent = String(state.controls.fine);
     gainValue.textContent = String(state.controls.gain);
-    dialValue.textContent = dialDisplay(state.controls.dial);
+    dialValue.value = String(state.controls.dial);
     renderPatches(patchList, state.controls.patches);
     highlightPorts(state.controls.patches);
+    applyStagePolicy();
   }
 
   function attachNumberInput(input, key, labelEl) {
@@ -96,17 +127,33 @@ export function wireControls({ state, onChange, onScan, onAddPatch, onClearPatch
 
   dialDown.addEventListener("click", () => {
     state.controls.dial = (state.controls.dial + 999) % 1000;
-    dialValue.textContent = dialDisplay(state.controls.dial);
+    dialValue.value = String(state.controls.dial);
     onChange();
   });
 
   dialUp.addEventListener("click", () => {
     state.controls.dial = (state.controls.dial + 1) % 1000;
-    dialValue.textContent = dialDisplay(state.controls.dial);
+    dialValue.value = String(state.controls.dial);
+    onChange();
+  });
+
+  dialValue.addEventListener("input", () => {
+    const value = Math.max(0, Math.min(999, Number(dialValue.value || 0)));
+    state.controls.dial = Number.isNaN(value) ? 0 : Math.round(value);
+    dialValue.value = String(state.controls.dial);
     onChange();
   });
 
   patchAdd.addEventListener("click", () => {
+    const policy = stagePolicy();
+    if (!policy.patchEnabled) {
+      return;
+    }
+
+    if (policy.maxPatches !== null && state.controls.patches.length >= policy.maxPatches) {
+      return;
+    }
+
     const route = `${patchFrom.value}->${patchTo.value}`;
     onAddPatch(route);
     syncControls();
@@ -114,28 +161,21 @@ export function wireControls({ state, onChange, onScan, onAddPatch, onClearPatch
   });
 
   patchClear.addEventListener("click", () => {
+    const policy = stagePolicy();
+    if (!policy.patchEnabled) {
+      return;
+    }
+
     onClearPatches();
     syncControls();
     onChange();
   });
 
-  scanBtn.addEventListener("click", () => {
-    onScan();
-    syncControls();
-  });
-
-  nextStageBtn.addEventListener("click", onNextStage);
   langBtn.addEventListener("click", onToggleLang);
   audioBtn.addEventListener("click", onToggleAudio);
   resetBtn.addEventListener("click", onResetProgress);
 
   document.addEventListener("keydown", (event) => {
-    if (event.key === " ") {
-      event.preventDefault();
-      onScan();
-      return;
-    }
-
     if (event.key === "ArrowUp") {
       state.controls.freq = Math.min(100, state.controls.freq + 1);
       syncControls();

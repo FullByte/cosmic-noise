@@ -48,18 +48,7 @@ export function evaluateSignal(stage, controls, language, textLookup) {
   const clarity = Math.round(clamp01(weighted) * 100);
   const confidence = Math.round(clamp01(weighted * 0.88 + routeScore * 0.12) * 100);
 
-  const hints = buildHints(
-    {
-    powerScore,
-    phaseScore,
-    freqScore,
-    fineScore,
-    gainScore,
-    dialScore,
-    routeScore,
-    },
-    textLookup
-  );
+  const hints = [];
 
   const outputText = stage.message[language] || stage.message.en;
   const decoded = scrambleMessage(outputText, clarity);
@@ -76,31 +65,6 @@ export function evaluateSignal(stage, controls, language, textLookup) {
   }
 
   return { clarity, confidence, hints, decoded, completed };
-}
-
-function buildHints(scores, textLookup) {
-  const details = [];
-  details.push(scoreLine(textLookup("channelPower"), scores.powerScore, textLookup));
-  details.push(scoreLine(textLookup("channelPhase"), scores.phaseScore, textLookup));
-  details.push(scoreLine(textLookup("channelFrequency"), scores.freqScore, textLookup));
-  details.push(scoreLine(textLookup("channelFine"), scores.fineScore, textLookup));
-  details.push(scoreLine(textLookup("channelGain"), scores.gainScore, textLookup));
-  details.push(scoreLine(textLookup("channelDial"), scores.dialScore, textLookup));
-  details.push(scoreLine(textLookup("channelRouting"), scores.routeScore, textLookup));
-  return details;
-}
-
-function scoreLine(label, score, textLookup) {
-  if (score >= 0.96) {
-    return `${label}: ${textLookup("scoreExact")}`;
-  }
-  if (score >= 0.7) {
-    return `${label}: ${textLookup("scoreNear")}`;
-  }
-  if (score >= 0.35) {
-    return `${label}: ${textLookup("scoreNoisy")}`;
-  }
-  return `${label}: ${textLookup("scoreMismatch")}`;
 }
 
 function scrambleMessage(message, clarity) {

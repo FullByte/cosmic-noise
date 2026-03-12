@@ -8,6 +8,19 @@ import { wireControls } from "./controls.js";
 import { ensureAudioStarted, updateAudio } from "./audio.js";
 
 const state = createInitialState(loadSave());
+
+function applyLoadStartValues() {
+  state.controls = defaultControls();
+  state.attempts = 0;
+  state.clarity = 0;
+  state.confidence = 0;
+  state.decodedText = "";
+  state.hints = [];
+  state.justCompleted = false;
+}
+
+applyLoadStartValues();
+
 const canvas = document.getElementById("signal-canvas");
 const renderer = createRenderer(canvas);
 
@@ -24,7 +37,6 @@ const codewordInput = document.getElementById("codeword-input");
 const codewordSubmit = document.getElementById("codeword-submit");
 const stageChip = document.getElementById("stage-chip");
 const attemptLabel = document.getElementById("attempt-label");
-const nextStageBtn = document.getElementById("next-stage");
 
 const tutorialOverlay = document.getElementById("tutorial-overlay");
 const tutorialTitle = document.getElementById("tutorial-title");
@@ -32,15 +44,19 @@ const tutorialBody = document.getElementById("tutorial-body");
 const tutorialPrev = document.getElementById("tutorial-prev");
 const tutorialNext = document.getElementById("tutorial-next");
 const tutorialSkip = document.getElementById("tutorial-skip");
+const stageOverlay = document.getElementById("stage-overlay");
+const stageTitle = document.getElementById("stage-title");
+const stageBody = document.getElementById("stage-body");
+const stageContinue = document.getElementById("stage-continue");
 
 let tutorialStep = 0;
+let lastLiveEvalAt = 0;
 
 const ui = wireControls({
   state,
   onChange: () => {
     save();
   },
-  onScan: scanSignal,
   onAddPatch: (route) => {
     if (!state.controls.patches.includes(route)) {
       state.controls.patches.push(route);
@@ -49,7 +65,6 @@ const ui = wireControls({
   onClearPatches: () => {
     state.controls.patches = [];
   },
-  onNextStage: advanceStage,
   onToggleLang: toggleLanguage,
   onToggleAudio: toggleAudio,
   onResetProgress: resetProgress,
@@ -88,7 +103,6 @@ function renderStatus() {
   completionStatus.textContent = `${t(state.language, "completionTarget")}: ${t(state.language, "clarity")} >= ${COMPLETION_CLARITY}% | ${t(state.language, "confidence")} >= ${COMPLETION_CONFIDENCE}% | ${t(state.language, "completionOrCodeword")} - ${stageCleared ? t(state.language, "completionReady") : t(state.language, "completionPending")}`;
   completionStatus.classList.toggle("ready", stageCleared);
   completionStatus.classList.toggle("pending", !stageCleared);
-  nextStageBtn.disabled = !stageCleared && state.stageIndex >= state.maxUnlockedStage;
 
   if (!state.decodedText) {
     outputScreen.textContent = "...";
@@ -105,11 +119,16 @@ function renderStatus() {
   });
 }
 
-function scanSignal() {
+function runEvaluation({ countAttempt }) {
   const stage = currentStage();
   const result = evaluateSignal(stage, state.controls, state.language, (key) => t(state.language, key));
+  const previousCompleted = state.justCompleted;
+  const previousUnlocked = state.maxUnlockedStage;
 
-  state.attempts += 1;
+  if (countAttempt) {
+    state.attempts += 1;
+  }
+
   state.clarity = result.clarity;
   state.confidence = result.confidence;
   state.decodedText = result.decoded;
@@ -118,15 +137,29 @@ function scanSignal() {
   if (result.completed) {
     state.justCompleted = true;
     state.maxUnlockedStage = Math.max(state.maxUnlockedStage, Math.min(state.stageIndex + 1, STAGES.length - 1));
-    state.hints.unshift(
-      state.stageIndex === STAGES.length - 1 ? t(state.language, "finalComplete") : t(state.language, "stageComplete")
-    );
+    if (!previousCompleted) {
+      state.hints.unshift(
+        state.stageIndex === STAGES.length - 1 ? t(state.language, "finalComplete") : t(state.language, "stageComplete")
+      );
+    }
   } else {
     state.justCompleted = false;
   }
 
-  save();
+  if (countAttempt || previousUnlocked !== state.maxUnlockedStage) {
+    save();
+  }
+
   renderStatus();
+}
+
+async function handleStageContinue() {
+  closeStageBriefing();
+
+  await ensureAudioStarted();
+  state.audioEnabled = true;
+  ui.setAudioLabel(t(state.language, "audioOn"));
+  save();
 }
 
 function advanceStage() {
@@ -154,6 +187,7 @@ function advanceStage() {
   ui.syncControls();
   save();
   renderStatus();
+  openStageBriefing();
 }
 
 function normalizeWord(value) {
@@ -179,21 +213,32 @@ function submitCodeword() {
   }
 
   if (submitted === expected) {
+    const isFinalStage = state.stageIndex === STAGES.length - 1;
     state.justCompleted = true;
     state.maxUnlockedStage = Math.max(state.maxUnlockedStage, Math.min(state.stageIndex + 1, STAGES.length - 1));
-    state.hints.unshift(t(state.language, "codewordSuccess"));
-    save();
-    renderStatus();
+
+    if (isFinalStage) {
+      state.hints.unshift(t(state.language, "finalComplete"));
+      save();
+      renderStatus();
+      return;
+    }
+
+    advanceStage();
     return;
   }
 
   state.hints.unshift(t(state.language, "codewordFail"));
+  window.alert(t(state.language, "codewordFailPopup"));
   renderStatus();
 }
 
 function toggleLanguage() {
   state.language = state.language === "de" ? "en" : "de";
   applyLanguage();
+  if (stageOverlay.classList.contains("visible")) {
+    renderStageBriefing();
+  }
   renderStatus();
   save();
 }
@@ -231,6 +276,27 @@ function closeTutorial() {
   tutorialOverlay.classList.remove("visible");
   state.tutorialSeen = true;
   save();
+  openStageBriefing();
+}
+
+function renderStageBriefing() {
+  const stage = currentStage();
+  stageTitle.textContent = `${t(state.language, "stageBriefing")} - ${stage.name[state.language]} (${stage.id}/${STAGES.length})`;
+  stageBody.textContent = stage.briefing?.[state.language] ?? stage.briefing?.en ?? "";
+  stageContinue.textContent = t(state.language, "stageContinue");
+}
+
+function openStageBriefing() {
+  if (tutorialOverlay.classList.contains("visible")) {
+    return;
+  }
+
+  renderStageBriefing();
+  stageOverlay.classList.add("visible");
+}
+
+function closeStageBriefing() {
+  stageOverlay.classList.remove("visible");
 }
 
 function renderTutorial() {
@@ -258,6 +324,7 @@ tutorialNext.addEventListener("click", () => {
 });
 
 tutorialSkip.addEventListener("click", closeTutorial);
+stageContinue.addEventListener("click", handleStageContinue);
 codewordSubmit.addEventListener("click", submitCodeword);
 codewordInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
@@ -267,6 +334,12 @@ codewordInput.addEventListener("keydown", (event) => {
 });
 
 function gameLoop() {
+  const now = performance.now();
+  if (now - lastLiveEvalAt >= 180) {
+    runEvaluation({ countAttempt: false });
+    lastLiveEvalAt = now;
+  }
+
   const visual = renderer.draw({
     clarity: state.clarity,
     confidence: state.confidence,
@@ -294,6 +367,8 @@ ui.syncControls();
 renderStatus();
 if (!state.tutorialSeen) {
   openTutorial();
+} else {
+  openStageBriefing();
 }
 
 gameLoop();

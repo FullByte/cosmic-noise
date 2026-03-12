@@ -273,6 +273,21 @@ label strong {
   border-radius: 6px;
   padding: 6px 8px;
   background: #0b1511;
+  color: var(--ink-main);
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+#dial-value::-webkit-outer-spin-button,
+#dial-value::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+
+.control-group.locked {
+  opacity: 0.52;
+  filter: grayscale(0.5);
 }
 
 .dial-btn,
