@@ -154,6 +154,36 @@ progress {
   color: var(--accent-signal);
 }
 
+.visual-debug {
+  margin-top: 10px;
+  padding: 8px 10px;
+  border: 1px solid #3f5d53;
+  border-radius: 8px;
+  background: rgba(7, 15, 12, 0.72);
+}
+
+.visual-debug-title {
+  margin: 0 0 6px;
+  font-family: "Space Mono", monospace;
+  font-size: 0.78rem;
+  color: #d1e7de;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.visual-debug-grid {
+  display: grid;
+  grid-template-columns: auto auto auto auto auto auto;
+  gap: 6px 10px;
+  align-items: baseline;
+  font-size: 0.82rem;
+}
+
+.visual-debug-grid strong {
+  font-family: "Space Mono", monospace;
+  color: #9bf9d2;
+}
+
 .control-group {
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 10px;

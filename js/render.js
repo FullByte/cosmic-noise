@@ -32,6 +32,19 @@ uniform float uGain;
 uniform float uDial;
 uniform float uPatchCount;
 uniform float uStage;
+uniform float uFit;
+uniform float uErrPower;
+uniform float uErrPhase;
+uniform float uErrFreq;
+uniform float uErrFine;
+uniform float uErrGain;
+uniform float uErrDial;
+uniform float uErrRoute;
+uniform float uRouteSigX;
+uniform float uRouteSigY;
+uniform float uRouteSigZ;
+uniform float uRouteLoop;
+uniform float uRouteFeedback;
 
 varying vec2 vUv;
 
@@ -62,25 +75,58 @@ float linePulse(float y, float t) {
   return max(band, drift);
 }
 
+float bars(vec2 uv, float t, float speed, float density) {
+  float v = sin((uv.y + t * speed) * density);
+  return smoothstep(0.85, 1.0, v);
+}
+
 void main() {
   vec2 uv = vUv;
   float t = uTime;
 
   float quality = clamp(uClarity, 0.0, 1.0);
   float trust = clamp(uConfidence, 0.0, 1.0);
+  float fit = clamp(uFit, 0.0, 1.0);
+  float lock = smoothstep(0.9, 1.0, fit);
+  float mismatch = 1.0 - fit;
+  float dialDirect = abs(sin(uDial * 18.8495559));
+  float patchDirect = clamp(uPatchCount / 6.0, 0.0, 1.0);
 
-  float freqBias = abs(uFreq - 0.5) * 2.0;
-  float fineBias = abs(uFine - 0.5) * 2.0;
+  float freqBias = abs(uFreq - 0.5) * 1.6 + uErrFreq * 0.35;
+  float fineBias = abs(uFine - 0.5) * 1.6 + uErrFine * 0.38;
   float gainBoost = pow(uGain, 1.15);
-  float patchChaos = clamp(uPatchCount / 6.0, 0.0, 1.0);
+  float patchChaos = patchDirect + uErrRoute * 0.34;
   float dialChaos = abs(sin(uDial * 60.0));
+  float phaseKick = uErrPhase * 0.3;
 
-  float dirt = (1.0 - quality) * 0.7 + gainBoost * 0.22 + freqBias * 0.08 + fineBias * 0.06;
-  dirt += patchChaos * 0.08 + dialChaos * 0.04;
+  float controlStress = uErrPower * 0.55 + uErrPhase * 0.6 + uErrFreq * 0.75 + uErrFine * 0.72 + uErrGain * 0.66 + uErrDial * 0.7 + uErrRoute * 0.8;
+  float stress = clamp(controlStress / 4.8, 0.0, 1.0);
+
+  float dirt = mismatch * 0.55 + (1.0 - quality) * 0.3 + gainBoost * 0.16 + freqBias * 0.06 + fineBias * 0.055;
+  dirt += patchChaos * 0.1 + dialChaos * 0.04 + phaseKick;
+  dirt += patchDirect * 0.12 + dialDirect * 0.1;
+  dirt += stress * 0.18;
   dirt = clamp(dirt, 0.0, 1.0);
 
-  float horizontalWarp = (noise(vec2(t * 3.2, uv.y * 45.0 + uStage * 0.2)) - 0.5) * (0.09 + dirt * 0.18);
+  float baseWarp = (0.03 + dirt * 0.14) * (0.45 + uErrFreq * 0.45 + uErrDial * 0.28 + dialDirect * 0.35 + patchDirect * 0.25);
+  float horizontalWarp = (noise(vec2(t * 3.2, uv.y * 45.0 + uStage * 0.2)) - 0.5) * baseWarp;
+  horizontalWarp += sin(uv.y * 42.0 + t * 11.0) * uErrRoute * 0.024;
   uv.x += horizontalWarp;
+
+  float chroma = (0.002 + dirt * 0.0075) * (1.0 - lock * 0.85);
+  float uvShiftR = noise(vec2(uv.y * 70.0, t * 6.0 + 1.7)) * chroma;
+  float uvShiftB = noise(vec2(uv.y * 70.0, t * 6.0 + 5.2)) * chroma;
+
+  float routeGlitchAmt = max(uErrRoute, patchDirect * 0.72);
+  float dialRollAmt = max(uErrDial, dialDirect * 0.85);
+  float routeSpeed = 1.35 + routeGlitchAmt * 1.1 + uRouteSigX * 0.7;
+  float routeDensity = 240.0 + routeGlitchAmt * 420.0 + uRouteSigY * 260.0;
+  float routeGlitch = bars(uv, t, routeSpeed, routeDensity) * routeGlitchAmt;
+  float dialRoll = bars(uv, t, 0.35 + dialRollAmt * 0.7, 120.0 + dialRollAmt * 140.0) * dialRollAmt;
+  float patchComb = sin((uv.x + t * (0.22 + uRouteSigZ * 0.4) + uDial * 0.4) * (30.0 + uPatchCount * 18.0 + uRouteSigX * 30.0));
+  float patchMask = smoothstep(0.82, 1.0, patchComb) * (0.12 + patchDirect * 0.35);
+  float phaseRipple = sin((uv.x + t * 0.35) * (18.0 + uErrPhase * 26.0) + sin(uv.y * 9.0 + t * 2.0)) * (0.018 * uErrPhase);
+  uv.x += phaseRipple;
 
   float snowA = hash(vec2(floor(uv.x * uResolution.x * (0.7 + dirt * 0.8)), floor(uv.y * uResolution.y * (0.9 + dirt * 0.9)) + floor(t * 80.0)));
   float snowB = noise(vec2(uv.x * 540.0 + t * 15.0, uv.y * 330.0 - t * 11.0));
@@ -88,32 +134,66 @@ void main() {
 
   float grain = noise(vec2(uv.x * 260.0 + t * 2.2, uv.y * 160.0 - t * 1.7));
   float scan = 0.78 + 0.22 * sin((uv.y + t * 0.01) * uResolution.y * 0.72);
-  float tearing = linePulse(uv.y, t) * (0.04 + dirt * 0.18);
+  float tearing = linePulse(uv.y, t) * (0.02 + dirt * 0.09);
+  float freqTear = bars(uv, t, 2.3 + uErrFreq * 2.7 + uRouteSigY * 0.9, 220.0 + uErrFreq * 320.0 + uRouteSigZ * 120.0) * (0.025 + uErrFreq * 0.08 + uRouteLoop * 0.03);
 
-  float signalFreq = 18.0 + uFreq * 58.0;
+  float signalFreq = 18.0 + uFreq * 58.0 + uErrFreq * 14.0;
   float phase = uPhase > 0.5 ? 3.14159265 : 0.0;
-  float center = 0.5 + sin(uv.x * signalFreq + t * (1.4 + uFine * 2.2) + phase) * (0.015 + (1.0 - dirt) * 0.035);
-  center += sin(uv.x * (signalFreq * 0.35) - t * 0.8) * (uFine - 0.5) * 0.06;
+  float amp = (0.003 + mismatch * 0.085 + uErrFine * 0.04 + uErrGain * 0.022) * (1.0 - lock * 0.78);
+  float center = 0.5 + sin(uv.x * signalFreq + t * (1.2 + uFine * 2.4) + phase) * amp;
+  center += sin(uv.x * (signalFreq * 0.31) - t * 0.8) * (uFine - 0.5) * (0.02 + mismatch * 0.035);
+  center += (noise(vec2(uv.x * 30.0, t * 3.0)) - 0.5) * (0.018 * mismatch + 0.008 * uErrRoute + uRouteLoop * 0.01);
+  center += (noise(vec2(uv.x * 140.0 + t * 10.0, uv.y * 120.0 - t * 7.0)) - 0.5) * (0.02 * uErrFine);
+  center += sin((uv.y + t * 0.8) * (10.0 + uRouteSigZ * 26.0)) * uRouteFeedback * 0.016;
 
   float band = abs(uv.y - center);
-  float carrier = smoothstep(0.045 + dirt * 0.02, 0.0, band);
+  float bandWidth = mix(0.013, 0.05, mismatch);
+  float carrier = smoothstep(bandWidth + dirt * 0.015, 0.0, band);
+
+  float signalCore = smoothstep(0.008, 0.0, band);
+  float cleanLine = signalCore * lock * 0.95;
 
   vec3 bg = vec3(0.01, 0.018, 0.016);
-  vec3 snowColor = vec3(tvSnow * (0.3 + dirt * 0.9));
-  vec3 phosphor = vec3(0.20, 0.95, 0.72) * carrier * (0.32 + trust * 0.85);
-  vec3 amberTag = vec3(0.95, 0.72, 0.28) * smoothstep(0.18, 0.0, length(uv - vec2(0.5, 0.5))) * (0.04 + quality * 0.18);
+  vec3 snowColor = vec3(tvSnow * (0.2 + dirt * 0.75));
+  vec3 phosphor = vec3(0.20 + uErrFreq * 0.5, 0.95, 0.72 + uErrFine * 0.25) * carrier * (0.28 + trust * 0.9);
+  vec3 neon = vec3(0.98, 0.18 + uErrRoute * 0.32, 0.62 + uErrDial * 0.24) * carrier * (0.12 + mismatch * 0.5);
+  vec3 amberTag = vec3(0.95, 0.72, 0.28) * smoothstep(0.18, 0.0, length(uv - vec2(0.5, 0.5))) * (0.03 + quality * 0.15);
+  vec3 gainTint = vec3(0.1 + uErrGain * 0.45, 0.05, 0.18 + uErrGain * 0.3);
+  vec3 patchTint = vec3(
+    0.08 + patchDirect * (0.12 + uRouteSigX * 0.24),
+    0.2 + patchDirect * (0.1 + uRouteSigY * 0.3),
+    0.16 + patchDirect * (0.08 + uRouteSigZ * 0.22)
+  );
 
   vec3 color = bg;
-  color += snowColor * (0.45 + dirt * 0.65) * scan;
+  color += snowColor * (0.22 + dirt * 0.6) * scan * (1.0 - lock * 0.7);
   color += phosphor;
+  color += neon;
   color += amberTag;
-  color += (grain - 0.5) * 0.09;
-  color += tearing;
+  color += gainTint * (0.03 + uErrGain * 0.12) * (1.0 - lock * 0.55);
+  color += patchTint * patchMask * (1.0 - lock * 0.5);
+  color += (grain - 0.5) * (0.02 + dirt * 0.1) * (1.0 - lock * 0.7);
+  color += tearing * (1.0 - lock * 0.72);
+  color += routeGlitch * vec3(0.22 + uRouteSigX * 0.2, 0.24 + uRouteSigY * 0.25, 0.28 + uRouteSigZ * 0.25);
+  color += dialRoll * vec3(0.14, 0.06, 0.22);
+  color += freqTear * vec3(0.16, 0.25, 0.22);
+  color += patchMask * uRouteFeedback * vec3(0.09, 0.13, 0.16);
+
+  color.r += cleanLine * 0.35 + uvShiftR;
+  color.g += cleanLine * 0.75;
+  color.b += cleanLine * 0.28 + uvShiftB;
+
+  float bloom = smoothstep(0.18, 0.0, abs(uv.y - 0.5)) * lock * 0.05;
+  color += vec3(0.4, 0.9, 0.7) * bloom;
 
   if (uPower < 0.5) {
     float deadNoise = hash(vec2(floor(vUv.x * uResolution.x), floor(vUv.y * uResolution.y) + floor(t * 100.0)));
-    color = vec3(deadNoise * 0.18);
-    color += vec3(0.02, 0.03, 0.025) * linePulse(vUv.y, t);
+    color = vec3(deadNoise * 0.28);
+    color += vec3(0.06, 0.08, 0.09) * linePulse(vUv.y, t);
+  } else if (uErrPower > 0.0) {
+    float brownout = bars(vUv, t, 0.5, 40.0) * uErrPower;
+    color *= 1.0 - brownout * 0.45;
+    color += vec3(0.05, 0.02, 0.02) * brownout;
   }
 
   color = clamp(color, 0.0, 1.0);
@@ -123,6 +203,151 @@ void main() {
 
 function clamp01(value) {
   return Math.max(0, Math.min(1, value));
+}
+
+function closeness(value, target, tolerance) {
+  const safeTol = Math.max(1, tolerance || 1);
+  return clamp01(1 - Math.abs(value - target) / safeTol);
+}
+
+function routeMatchScore(currentRoutes, expectedRoutes) {
+  const currentSet = new Set(currentRoutes || []);
+  const expectedSet = new Set(expectedRoutes || []);
+
+  let exact = 0;
+  for (const route of currentSet) {
+    if (expectedSet.has(route)) {
+      exact += 1;
+    }
+  }
+
+  const coverage = expectedSet.size === 0 ? 1 : exact / expectedSet.size;
+  const noisePenalty = currentSet.size > expectedSet.size ? (currentSet.size - expectedSet.size) * 0.07 : 0;
+  return clamp01(coverage - noisePenalty);
+}
+
+function routeFingerprint(route) {
+  let hash = 2166136261;
+  for (let i = 0; i < route.length; i += 1) {
+    hash ^= route.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+
+  const x = ((hash >>> 0) % 997) / 997;
+  const y = (((hash >>> 10) >>> 0) % 991) / 991;
+  const z = (((hash >>> 20) >>> 0) % 983) / 983;
+  return { x, y, z };
+}
+
+function buildRouteSignature(routes) {
+  if (!Array.isArray(routes) || routes.length === 0) {
+    return {
+      x: 0,
+      y: 0,
+      z: 0,
+      loop: 0,
+      feedback: 0,
+    };
+  }
+
+  let sx = 0;
+  let sy = 0;
+  let sz = 0;
+  let loops = 0;
+  let feedback = 0;
+
+  for (const route of routes) {
+    const fp = routeFingerprint(route);
+    sx += fp.x;
+    sy += fp.y;
+    sz += fp.z;
+
+    const [from, to] = route.split("->");
+    if (from && to && from === to) {
+      loops += 1;
+    }
+    if (route === "DEC->ANT" || route === "ANT->DEC") {
+      feedback += 1;
+    }
+  }
+
+  const count = routes.length;
+  return {
+    x: clamp01(sx / count),
+    y: clamp01(sy / count),
+    z: clamp01(sz / count),
+    loop: clamp01(loops / Math.max(1, count)),
+    feedback: clamp01(feedback / Math.max(1, count)),
+  };
+}
+
+function computeVisualMetrics(stage, controls) {
+  const target = stage.target;
+  const tol = stage.tolerance;
+
+  const powerScore = controls.power === target.power ? 1 : 0;
+  const phaseScore = controls.phase === target.phase ? 1 : 0;
+  const freqScore = closeness(controls.freq, target.freq, tol.freq);
+  const fineScore = closeness(controls.fine, target.fine, tol.fine);
+  const gainScore = closeness(controls.gain, target.gain, tol.gain);
+  const dialScore = closeness(controls.dial, target.dial, tol.dial);
+  const routeScore = routeMatchScore(controls.patches, target.routes);
+  const routeSig = buildRouteSignature(controls.patches);
+
+  const fit = clamp01(
+    powerScore * 0.16 +
+      phaseScore * 0.08 +
+      freqScore * 0.2 +
+      fineScore * 0.16 +
+      gainScore * 0.16 +
+      dialScore * 0.14 +
+      routeScore * 0.1
+  );
+
+  return {
+    fit,
+    errPower: 1 - powerScore,
+    errPhase: 1 - phaseScore,
+    errFreq: 1 - freqScore,
+    errFine: 1 - fineScore,
+    errGain: 1 - gainScore,
+    errDial: 1 - dialScore,
+    errRoute: 1 - routeScore,
+    routeSig,
+  };
+}
+
+function computeDebugSnapshot(metrics, clarity, controls) {
+  const quality = clamp01(clarity / 100);
+  const gain = clamp01(controls.gain / 100);
+  const dialDirect = Math.abs(Math.sin(clamp01(controls.dial / 999) * Math.PI * 6));
+  const patchDirect = clamp01((controls.patches?.length || 0) / 6);
+  const lock = clamp01((metrics.fit - 0.9) / 0.1);
+
+  const noiseBase = clamp01(
+    (1 - metrics.fit) * 0.65 +
+      (1 - quality) * 0.28 +
+      gain * 0.18 +
+      metrics.errRoute * 0.08 +
+      metrics.errFine * 0.07 +
+      metrics.errFreq * 0.08 +
+      metrics.errPower * 0.08 +
+      metrics.errPhase * 0.06 +
+        metrics.errDial * 0.07 +
+        patchDirect * 0.12 +
+          dialDirect * 0.1 +
+          metrics.routeSig.feedback * 0.06
+  );
+  const noise = clamp01(noiseBase * (1 - lock * 0.72));
+
+  const curveAmp = (0.003 + metrics.errFine * 0.055 + (1 - metrics.fit) * 0.08) * (1 - lock * 0.75);
+  const curve = clamp01(curveAmp / 0.16);
+
+  return {
+    fit: clamp01(metrics.fit),
+    noise,
+    curve,
+  };
 }
 
 function resizeRenderer(canvas, renderer) {
@@ -142,11 +367,25 @@ function drawFallback2d(ctx, canvas, frame, clarity, confidence, controls, stage
   const height = canvas.height;
   const quality = clamp01(clarity / 100);
   const trust = clamp01(confidence / 100);
-  const freqBias = Math.abs(controls.freq / 100 - 0.5) * 2;
-  const fineBias = Math.abs((controls.fine + 50) / 100 - 0.5) * 2;
+  const metrics = computeVisualMetrics(stage, controls);
   const gain = clamp01(controls.gain / 100);
-  const patchChaos = Math.min((controls.patches?.length || 0) / 6, 1);
-  const dirt = clamp01((1 - quality) * 0.7 + gain * 0.2 + freqBias * 0.07 + fineBias * 0.06 + patchChaos * 0.08);
+  const dialNorm = clamp01(controls.dial / 999);
+  const dialDirect = Math.abs(Math.sin(dialNorm * Math.PI * 6));
+  const patchDirect = clamp01((controls.patches?.length || 0) / 6);
+  const dirt = clamp01(
+    (1 - metrics.fit) * 0.65 +
+      (1 - quality) * 0.28 +
+      gain * 0.18 +
+      metrics.errRoute * 0.08 +
+      metrics.errFine * 0.07 +
+      metrics.errFreq * 0.08 +
+      metrics.errPower * 0.08 +
+      metrics.errPhase * 0.06 +
+        metrics.errDial * 0.07 +
+        patchDirect * 0.12 +
+        dialDirect * 0.1
+  );
+  const lock = clamp01((metrics.fit - 0.9) / 0.1);
 
   ctx.fillStyle = "#020605";
   ctx.fillRect(0, 0, width, height);
@@ -161,7 +400,8 @@ function drawFallback2d(ctx, canvas, frame, clarity, confidence, controls, stage
     for (let x = 0; x < width; x++) {
       const i = (y * width + x) * 4;
 
-      const jitter = Math.sin(y * 0.12 + time * 8 + stage.id * 0.31) * (8 + dirt * 26);
+      const jitter = Math.sin(y * 0.12 + time * 8 + stage.id * 0.31) * (4 + dirt * 22 + metrics.errRoute * 8 + patchDirect * 12 + metrics.routeSig.x * 9);
+      const dialWobble = Math.sin(y * 0.06 + time * (5 + metrics.errDial * 8 + dialDirect * 10)) * (metrics.errDial + dialDirect * 0.9) * 10;
       const sx = Math.max(0, Math.min(width - 1, x + jitter));
       const snow = (Math.sin(sx * 12.9898 + y * 78.233 + time * 190) * 43758.5453) % 1;
       const tv = Math.abs(snow);
@@ -169,21 +409,29 @@ function drawFallback2d(ctx, canvas, frame, clarity, confidence, controls, stage
 
       const carrierCenter =
         height * (0.5 +
-          Math.sin((x / width) * (16 + controls.freq * 0.6) + time * (1.2 + controls.fine * 0.03) + (controls.phase ? Math.PI : 0)) *
-            (0.02 + (1 - dirt) * 0.03));
+          Math.sin((x / width) * (16 + controls.freq * 0.6 + metrics.errFreq * 14) + time * (1.2 + controls.fine * 0.03) + (controls.phase ? Math.PI : 0) + metrics.errPhase * 0.8) *
+            ((0.003 + metrics.errFine * 0.055 + (1 - metrics.fit) * 0.08) * (1 - lock * 0.75)));
       const dist = Math.abs(y - carrierCenter) / height;
-      const carrier = Math.max(0, 1 - dist / (0.03 + dirt * 0.015));
+      const carrier = Math.max(0, 1 - dist / (0.02 + (1 - metrics.fit) * 0.05 + dirt * 0.015));
+      const cleanLine = Math.max(0, 1 - dist / 0.008) * lock;
 
-      let base = tv * (0.3 + dirt * 0.95) * scan + (grain - 0.5) * 0.18;
+      let base = tv * (0.16 + dirt * 0.7 + patchDirect * 0.25) * scan * (1 - lock * 0.7) + (grain - 0.5) * (0.06 + dirt * 0.12) * (1 - lock * 0.7);
       base += carrier * (0.2 + trust * 0.8);
+      base += Math.max(0, Math.sin((y / height) * (50 + metrics.errFreq * 80) + time * 12)) * metrics.errFreq * 0.08;
+      base += Math.max(0, Math.sin((x / width) * (40 + patchDirect * 100 + metrics.routeSig.y * 80) + time * (6 + dialDirect * 8 + metrics.routeSig.z * 3))) * patchDirect * 0.08;
 
       if (!powerOn) {
-        base = tv * 0.2 + Math.max(0, Math.sin(y * 0.35 + time * 5)) * 0.06;
+        base = tv * 0.34 + Math.max(0, Math.sin(y * 0.35 + time * 5)) * 0.08;
+      } else if (metrics.errPower > 0) {
+        base *= 1 - Math.max(0, Math.sin(y * 0.12 + time * 3.4)) * metrics.errPower * 0.35;
       }
 
-      const r = Math.min(255, Math.max(0, (base * 120 + carrier * 28) * 1.02));
-      const g = Math.min(255, Math.max(0, base * 190 + carrier * 110));
-      const b = Math.min(255, Math.max(0, base * 160 + carrier * 72));
+      const chroma = (1 - metrics.fit) * 55 + patchDirect * 24;
+      const routeFlash = Math.max(0, Math.sin((y / height) * (180 + metrics.routeSig.z * 120) + time * (18 + metrics.routeSig.x * 6))) * Math.max(metrics.errRoute * 24, patchDirect * 18);
+      const phaseTint = metrics.errPhase * 16;
+      const r = Math.min(255, Math.max(0, (base * 120 + carrier * (28 + chroma * 0.35) + cleanLine * 90 + routeFlash + phaseTint + dialWobble + metrics.routeSig.x * 10) * 1.03));
+      const g = Math.min(255, Math.max(0, base * 190 + carrier * 120 + cleanLine * 170 + routeFlash * 0.4 + metrics.routeSig.y * 15));
+      const b = Math.min(255, Math.max(0, base * 160 + carrier * (72 + chroma * 0.2) + cleanLine * 70 + metrics.errGain * 18 + metrics.routeSig.z * 14));
 
       pixels[i] = r;
       pixels[i + 1] = g;
@@ -215,6 +463,19 @@ function buildThreeRenderer(canvas, THREE) {
     uDial: { value: 0 },
     uPatchCount: { value: 0 },
     uStage: { value: 1 },
+    uFit: { value: 0 },
+    uErrPower: { value: 1 },
+    uErrPhase: { value: 1 },
+    uErrFreq: { value: 1 },
+    uErrFine: { value: 1 },
+    uErrGain: { value: 1 },
+    uErrDial: { value: 1 },
+    uErrRoute: { value: 1 },
+    uRouteSigX: { value: 0 },
+    uRouteSigY: { value: 0 },
+    uRouteSigZ: { value: 0 },
+    uRouteLoop: { value: 0 },
+    uRouteFeedback: { value: 0 },
   };
 
   const material = new THREE.ShaderMaterial({
@@ -256,10 +517,12 @@ export function createRenderer(canvas) {
   function draw({ clarity, confidence, controls, stage }) {
     frame += 1;
     ensureThree();
+    const metrics = computeVisualMetrics(stage, controls);
+    const debug = computeDebugSnapshot(metrics, clarity, controls);
 
     if (!threeReady || loadingFailed) {
       drawFallback2d(ctx2d, canvas, frame, clarity, confidence, controls, stage);
-      return;
+      return debug;
     }
 
     const { renderer, scene, camera, uniforms } = threeReady;
@@ -277,8 +540,22 @@ export function createRenderer(canvas) {
     uniforms.uDial.value = clamp01(controls.dial / 999);
     uniforms.uPatchCount.value = Array.isArray(controls.patches) ? controls.patches.length : 0;
     uniforms.uStage.value = stage.id;
+    uniforms.uFit.value = metrics.fit;
+    uniforms.uErrPower.value = metrics.errPower;
+    uniforms.uErrPhase.value = metrics.errPhase;
+    uniforms.uErrFreq.value = metrics.errFreq;
+    uniforms.uErrFine.value = metrics.errFine;
+    uniforms.uErrGain.value = metrics.errGain;
+    uniforms.uErrDial.value = metrics.errDial;
+    uniforms.uErrRoute.value = metrics.errRoute;
+    uniforms.uRouteSigX.value = metrics.routeSig.x;
+    uniforms.uRouteSigY.value = metrics.routeSig.y;
+    uniforms.uRouteSigZ.value = metrics.routeSig.z;
+    uniforms.uRouteLoop.value = metrics.routeSig.loop;
+    uniforms.uRouteFeedback.value = metrics.routeSig.feedback;
 
     renderer.render(scene, camera);
+    return debug;
   }
 
   return { draw };

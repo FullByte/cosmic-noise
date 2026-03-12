@@ -14,6 +14,9 @@ const renderer = createRenderer(canvas);
 const confidenceMeter = document.getElementById("confidence-meter");
 const confidenceLabel = document.getElementById("confidence-label");
 const clarityLabel = document.getElementById("clarity-label");
+const debugFit = document.getElementById("debug-fit");
+const debugNoise = document.getElementById("debug-noise");
+const debugCurve = document.getElementById("debug-curve");
 const outputScreen = document.getElementById("signal-output");
 const hintOutput = document.getElementById("hint-output");
 const completionStatus = document.getElementById("completion-status");
@@ -156,7 +159,14 @@ function advanceStage() {
 function normalizeWord(value) {
   return String(value || "")
     .trim()
-    .toUpperCase();
+    .toUpperCase()
+    .replace(/\u00c4/g, "AE")
+    .replace(/\u00d6/g, "OE")
+    .replace(/\u00dc/g, "UE")
+    .replace(/\u1e9e/g, "SS")
+    .replace(/\u00df/g, "SS")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
 }
 
 function submitCodeword() {
@@ -229,7 +239,7 @@ function renderTutorial() {
   tutorialTitle.textContent = item.title;
   tutorialBody.textContent = item.body;
   tutorialPrev.disabled = tutorialStep === 0;
-  tutorialNext.textContent = tutorialStep === steps.length - 1 ? "OK" : t(state.language, "tutorialNext");
+  tutorialNext.textContent = tutorialStep === steps.length - 1 ? t(state.language, "tutorialDone") : t(state.language, "tutorialNext");
 }
 
 tutorialPrev.addEventListener("click", () => {
@@ -257,17 +267,23 @@ codewordInput.addEventListener("keydown", (event) => {
 });
 
 function gameLoop() {
-  renderer.draw({
+  const visual = renderer.draw({
     clarity: state.clarity,
     confidence: state.confidence,
     controls: state.controls,
     stage: currentStage(),
   });
 
+  if (visual) {
+    debugFit.textContent = `${Math.round(visual.fit * 100)}%`;
+    debugNoise.textContent = `${Math.round(visual.noise * 100)}%`;
+    debugCurve.textContent = `${Math.round(visual.curve * 100)}%`;
+  }
+
   updateAudio({
     enabled: state.audioEnabled,
-    clarity: state.clarity,
-    controls: state.controls,
+    confidence: state.confidence,
+    stageIndex: state.stageIndex,
   });
 
   requestAnimationFrame(gameLoop);
