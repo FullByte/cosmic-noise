@@ -10,7 +10,7 @@ import { ensureAudioStarted, updateAudio } from "./audio.js";
 const state = createInitialState(loadSave());
 
 function applyLoadStartValues() {
-  state.controls = defaultControls();
+  state.controls = defaultControls(state.stageIndex);
   state.attempts = 0;
   state.clarity = 0;
   state.confidence = 0;
@@ -52,6 +52,10 @@ const stageOverlay = document.getElementById("stage-overlay");
 const stageTitle = document.getElementById("stage-title");
 const stageBody = document.getElementById("stage-body");
 const stageContinue = document.getElementById("stage-continue");
+const victoryOverlay = document.getElementById("victory-overlay");
+const victoryTitle = document.getElementById("victory-title");
+const victoryBody = document.getElementById("victory-body");
+const victoryClose = document.getElementById("victory-close");
 
 let tutorialStep = 0;
 let lastLiveEvalAt = 0;
@@ -176,6 +180,9 @@ function runEvaluation({ countAttempt }) {
       state.hints.unshift(
         state.stageIndex === STAGES.length - 1 ? t(state.language, "finalComplete") : t(state.language, "stageComplete")
       );
+      if (state.stageIndex === STAGES.length - 1) {
+        openVictoryDialog();
+      }
     }
   } else {
     state.justCompleted = false;
@@ -210,7 +217,7 @@ function advanceStage() {
   }
 
   state.stageIndex = next;
-  state.controls = defaultControls();
+  state.controls = defaultControls(state.stageIndex);
   state.attempts = 0;
   state.clarity = 0;
   state.confidence = 0;
@@ -256,6 +263,7 @@ function submitCodeword() {
       state.hints.unshift(t(state.language, "finalComplete"));
       save();
       renderStatus();
+      openVictoryDialog();
       return;
     }
 
@@ -273,6 +281,9 @@ function toggleLanguage() {
   applyLanguage();
   if (stageOverlay.classList.contains("visible")) {
     renderStageBriefing();
+  }
+  if (victoryOverlay.classList.contains("visible")) {
+    renderVictoryDialog();
   }
   renderStatus();
   save();
@@ -321,6 +332,26 @@ function renderStageBriefing() {
   stageContinue.textContent = t(state.language, "stageContinue");
 }
 
+function renderVictoryDialog() {
+  victoryTitle.textContent = t(state.language, "victoryTitle");
+  victoryBody.textContent = t(state.language, "victoryBody");
+  victoryClose.textContent = t(state.language, "victoryClose");
+}
+
+function openVictoryDialog() {
+  renderVictoryDialog();
+  victoryOverlay.classList.add("visible");
+}
+
+function closeVictoryDialog() {
+  victoryOverlay.classList.remove("visible");
+}
+
+function openInsiderPage() {
+  closeVictoryDialog();
+  window.location.href = "./insider.html";
+}
+
 function openStageBriefing() {
   if (tutorialOverlay.classList.contains("visible")) {
     return;
@@ -360,6 +391,7 @@ tutorialNext.addEventListener("click", () => {
 
 tutorialSkip.addEventListener("click", closeTutorial);
 stageContinue.addEventListener("click", handleStageContinue);
+victoryClose.addEventListener("click", openInsiderPage);
 codewordSubmit.addEventListener("click", submitCodeword);
 codewordInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {

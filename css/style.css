@@ -279,6 +279,13 @@ progress {
   margin-top: 0;
 }
 
+.io-label-row {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
 .io-switch-wrap {
   position: relative;
   width: 110px;
@@ -287,32 +294,20 @@ progress {
   align-items: center;
   justify-content: center;
   margin: 0;
+  cursor: pointer;
 }
 
 .io-label {
-  font-family: "Space Mono", monospace;
-  font-size: 1rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  color: #d7e4f1;
-  background: none;
-  border-radius: 0;
-  padding: 0;
-  margin-bottom: 10px;
-  text-shadow: none;
-  display: block;
-  text-align: center;
+  margin: 0;
 }
 
 .io-switch input {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  margin: 0;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
   opacity: 0;
-  cursor: pointer;
-  z-index: 1;
+  pointer-events: none;
 }
 
 .io-track {
@@ -324,6 +319,8 @@ progress {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08), inset 0 -9px 12px rgba(0, 0, 0, 0.24), 0 4px 8px rgba(0, 0, 0, 0.28);
   position: absolute;
   overflow: hidden;
+  transition: box-shadow 0.16s ease, background 0.16s ease, transform 0.16s ease, filter 0.16s ease;
+  filter: none;
 }
 
 .io-track::before {
@@ -348,10 +345,39 @@ progress {
   border-radius: 8px;
   background: linear-gradient(90deg, rgba(0, 0, 0, 0.28) 0 50%, rgba(0, 0, 0, 0.04) 50% 100%);
   transition: background 0.16s ease;
+  box-shadow: inset 0 0 3px rgba(220, 230, 244, 0.04);
 }
 
-.io-switch input:checked + .io-track::after {
+.io-switch input:checked ~ .io-switch-wrap .io-track {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1), inset 0 -9px 12px rgba(0, 0, 0, 0.26), 0 4px 8px rgba(0, 0, 0, 0.28);
+}
+
+.io-switch input:checked ~ .io-switch-wrap .io-track::after {
   background: linear-gradient(90deg, rgba(0, 0, 0, 0.04) 0 50%, rgba(0, 0, 0, 0.28) 50% 100%);
+}
+
+.io-switch input:checked ~ .io-switch-wrap .io-off {
+  color: #e0e5ec;
+  opacity: 0.58;
+}
+
+.io-switch input:checked ~ .io-switch-wrap .io-on {
+  color: #f4f8ff;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.18);
+}
+
+.io-switch input:not(:checked) ~ .io-switch-wrap .io-off {
+  color: #f4f8ff;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.18);
+}
+
+.io-switch input:not(:checked) ~ .io-switch-wrap .io-on {
+  color: #e0e5ec;
+  opacity: 0.58;
+}
+
+.io-switch-wrap:active .io-track {
+  transform: translateY(1px);
 }
 
 .io-knob {
@@ -376,19 +402,17 @@ progress {
 }
 
 .io-alert-led {
-  position: absolute;
-  right: -14px;
-  top: 50%;
+  position: relative;
   width: 12px;
   height: 12px;
   border-radius: 999px;
   border: 1px solid rgba(255, 214, 214, 0.26);
   background: #2b0b0b;
   box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.58), 0 0 0 rgba(0, 0, 0, 0);
-  transform: translateY(-50%);
   opacity: 0.96;
   filter: brightness(0.52) saturate(0.7);
   pointer-events: none;
+  transition: background 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease, opacity 0.16s ease;
 }
 
 .io-switch.blink-hint .io-alert-led {
@@ -398,11 +422,11 @@ progress {
   filter: brightness(1.2) saturate(1.25);
 }
 
-.io-switch input:checked ~ .io-alert-led {
+.io-switch input:checked ~ .io-label-row .io-alert-led {
   animation: none;
-  background: #220909;
-  box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.6), 0 0 0 rgba(0, 0, 0, 0);
-  filter: brightness(0.42) saturate(0.48);
+  background: #ff5f4d;
+  box-shadow: inset 0 0 4px rgba(255, 255, 255, 0.24), 0 0 14px rgba(255, 88, 72, 0.68);
+  filter: brightness(1.18) saturate(1.2);
 }
 
 @keyframes io-alert-blink {

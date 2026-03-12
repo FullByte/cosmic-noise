@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cosmic Noise Decoder - Insider Dossier</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./css/style.css" />
+    <link rel="stylesheet" href="./css/insider.css" />
+  </head>
+  <body class="insider-page">
+    <div class="bg-grid" aria-hidden="true"></div>
+
+    <div class="insider-shell">
+      <header class="insider-hero panel">
+        <a class="insider-back" href="./index.html">Zurueck zum Decoder</a>
+        <p class="insider-kicker">INSIDER DOSSIER</p>
+        <h1 id="insider-title" class="insider-title">Lade Dossier ...</h1>
+        <p id="insider-subtitle" class="insider-subtitle"></p>
+
+        <div class="insider-highlight-row">
+          <section class="insider-highlight panel">
+            <span class="insider-highlight-label">Kernthese</span>
+            <p id="insider-thesis" class="insider-highlight-copy"></p>
+          </section>
+          <section class="insider-highlight panel">
+            <span class="insider-highlight-label">Status</span>
+            <p class="insider-highlight-copy">
+              Das Dossier verarbeitet <code>theorie.md</code> live und zerlegt es in Signale, Akteure, Mechanik und
+              Konsequenzen.
+            </p>
+          </section>
+        </div>
+      </header>
+
+      <main class="insider-layout">
+        <aside class="insider-sidebar">
+          <section class="insider-panel panel">
+            <p class="insider-panel-kicker">Signalpfad</p>
+            <ol id="insider-map" class="insider-map"></ol>
+          </section>
+
+          <section class="insider-panel panel">
+            <p class="insider-panel-kicker">Quelltext</p>
+            <a class="insider-source-link" href="./theorie.md">theorie.md oeffnen</a>
+          </section>
+        </aside>
+
+        <section class="insider-main">
+          <div id="insider-summary" class="insider-summary-grid"></div>
+          <div id="insider-sections" class="insider-sections"></div>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="./js/insider.js"></script>
+  </body>
+</html>

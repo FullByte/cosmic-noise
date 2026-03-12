@@ -77,9 +77,12 @@
             <p class="group-title" data-i18n="switches">Switches</p>
             <div class="switch-bank">
               <div class="io-switch blink-hint">
-                <div class="io-label" data-i18n="powerSwitch">Power</div>
-                <div class="io-switch-wrap">
-                  <input id="power-switch" type="checkbox" aria-label="Power I/O" />
+                <input id="power-switch" type="checkbox" aria-label="Power I/O" />
+                <div class="io-label-row">
+                  <div class="io-label group-title" data-i18n="powerSwitch">Power</div>
+                  <span class="io-alert-led" aria-hidden="true"></span>
+                </div>
+                <label class="io-switch-wrap" for="power-switch">
                   <span class="io-track">
                     <span class="io-knob"></span>
                     <span class="io-marks">
@@ -87,14 +90,16 @@
                       <span class="io-on">I</span>
                     </span>
                   </span>
-                  <span class="io-alert-led" aria-hidden="true"></span>
-                </div>
+                </label>
               </div>
 
               <div class="io-switch">
-                <div class="io-label" data-i18n="phaseSwitch">Phase Invert</div>
-                <div class="io-switch-wrap">
-                  <input id="phase-switch" type="checkbox" aria-label="Phase invert I/O" />
+                <input id="phase-switch" type="checkbox" aria-label="Phase invert I/O" />
+                <div class="io-label-row">
+                  <div class="io-label group-title" data-i18n="phaseSwitch">Phase Invert</div>
+                  <span class="io-alert-led" aria-hidden="true"></span>
+                </div>
+                <label class="io-switch-wrap" for="phase-switch">
                   <span class="io-track">
                     <span class="io-knob"></span>
                     <span class="io-marks">
@@ -102,8 +107,7 @@
                       <span class="io-on">I</span>
                     </span>
                   </span>
-                  <span class="io-alert-led" aria-hidden="true"></span>
-                </div>
+                </label>
               </div>
             </div>
           </div>
@@ -217,6 +221,16 @@
         <p id="stage-body"></p>
         <div class="actions">
           <button id="stage-continue" class="primary-btn" type="button" data-i18n="stageContinue">Verstanden</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="victory-overlay" class="tutorial-overlay" role="dialog" aria-modal="true">
+      <div class="tutorial-card panel">
+        <h3 id="victory-title"></h3>
+        <p id="victory-body"></p>
+        <div class="actions">
+          <button id="victory-close" class="primary-btn" type="button" data-i18n="victoryClose">Schliessen</button>
         </div>
       </div>
     </div>

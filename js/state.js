@@ -1,12 +1,29 @@
 import { STAGES } from "./stages.js";
 
-export function defaultControls() {
+function lowestScoringValue(target, min, max) {
+  const minDelta = Math.abs(min - target);
+  const maxDelta = Math.abs(max - target);
+  return minDelta >= maxDelta ? min : max;
+}
+
+function stageModulationDefaults(stageIndex = 0) {
+  const stage = STAGES[clampStage(stageIndex)] ?? STAGES[0];
+  return {
+    freq: lowestScoringValue(stage.target.freq, 0, 100),
+    fine: lowestScoringValue(stage.target.fine, -50, 50),
+    gain: lowestScoringValue(stage.target.gain, 0, 100),
+  };
+}
+
+export function defaultControls(stageIndex = 0) {
+  const modulationDefaults = stageModulationDefaults(stageIndex);
+
   return {
     power: false,
     phase: false,
-    freq: 50,
-    fine: 0,
-    gain: 40,
+    freq: modulationDefaults.freq,
+    fine: modulationDefaults.fine,
+    gain: modulationDefaults.gain,
     dial: 0,
     patches: [],
   };
@@ -20,7 +37,7 @@ export function createInitialState(saved) {
     maxUnlockedStage: 0,
     attempts: 0,
     tutorialSeen: false,
-    controls: defaultControls(),
+    controls: defaultControls(0),
     clarity: 0,
     confidence: 0,
     decodedText: "",
@@ -37,7 +54,7 @@ export function createInitialState(saved) {
     ...saved,
     stageIndex: clampStage(saved.stageIndex ?? 0),
     maxUnlockedStage: clampStage(saved.maxUnlockedStage ?? 0),
-    controls: { ...defaultControls(), ...(saved.controls ?? {}) },
+    controls: { ...defaultControls(saved.stageIndex ?? 0), ...(saved.controls ?? {}) },
     hints: Array.isArray(saved.hints) ? saved.hints : [],
   };
 }
