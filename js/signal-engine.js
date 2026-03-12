@@ -2,6 +2,9 @@ function clamp01(value) {
   return Math.max(0, Math.min(1, value));
 }
 
+export const COMPLETION_CLARITY = 88;
+export const COMPLETION_CONFIDENCE = 84;
+
 function closeness(value, target, tolerance) {
   const delta = Math.abs(value - target);
   return clamp01(1 - delta / tolerance);
@@ -57,7 +60,7 @@ export function evaluateSignal(stage, controls, language, textLookup) {
 
   const outputText = stage.message[language] || stage.message.en;
   const decoded = scrambleMessage(outputText, clarity);
-  const completed = clarity >= 88 && confidence >= 84;
+  const completed = clarity >= COMPLETION_CLARITY && confidence >= COMPLETION_CONFIDENCE;
 
   if (!controls.power) {
     hints.unshift(textLookup("hintPowerOff"));

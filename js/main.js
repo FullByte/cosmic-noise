@@ -2,7 +2,7 @@ import { STRINGS, t } from "./i18n.js";
 import { STAGES } from "./stages.js";
 import { loadSave, saveState, clearSave } from "./storage.js";
 import { createInitialState, serializeState, defaultControls } from "./state.js";
-import { evaluateSignal } from "./signal-engine.js";
+import { COMPLETION_CLARITY, COMPLETION_CONFIDENCE, evaluateSignal } from "./signal-engine.js";
 import { createRenderer } from "./render.js";
 import { wireControls } from "./controls.js";
 import { ensureAudioStarted, updateAudio } from "./audio.js";
@@ -16,8 +16,12 @@ const confidenceLabel = document.getElementById("confidence-label");
 const clarityLabel = document.getElementById("clarity-label");
 const outputScreen = document.getElementById("signal-output");
 const hintOutput = document.getElementById("hint-output");
+const completionStatus = document.getElementById("completion-status");
+const codewordInput = document.getElementById("codeword-input");
+const codewordSubmit = document.getElementById("codeword-submit");
 const stageChip = document.getElementById("stage-chip");
 const attemptLabel = document.getElementById("attempt-label");
+const nextStageBtn = document.getElementById("next-stage");
 
 const tutorialOverlay = document.getElementById("tutorial-overlay");
 const tutorialTitle = document.getElementById("tutorial-title");
@@ -71,11 +75,17 @@ function applyLanguage() {
 
 function renderStatus() {
   const stage = currentStage();
+  const stageCleared = state.justCompleted || state.stageIndex < state.maxUnlockedStage;
+
   stageChip.textContent = `${stage.name[state.language]} (${stage.id}/${STAGES.length})`;
   confidenceMeter.value = state.confidence;
   confidenceLabel.textContent = `${state.confidence}%`;
   clarityLabel.textContent = `${state.clarity}%`;
   attemptLabel.textContent = `${t(state.language, "attempts")}: ${state.attempts}`;
+  completionStatus.textContent = `${t(state.language, "completionTarget")}: ${t(state.language, "clarity")} >= ${COMPLETION_CLARITY}% | ${t(state.language, "confidence")} >= ${COMPLETION_CONFIDENCE}% | ${t(state.language, "completionOrCodeword")} - ${stageCleared ? t(state.language, "completionReady") : t(state.language, "completionPending")}`;
+  completionStatus.classList.toggle("ready", stageCleared);
+  completionStatus.classList.toggle("pending", !stageCleared);
+  nextStageBtn.disabled = !stageCleared && state.stageIndex >= state.maxUnlockedStage;
 
   if (!state.decodedText) {
     outputScreen.textContent = "...";
@@ -136,9 +146,38 @@ function advanceStage() {
   state.decodedText = "";
   state.hints = [];
   state.justCompleted = false;
+  codewordInput.value = "";
 
   ui.syncControls();
   save();
+  renderStatus();
+}
+
+function normalizeWord(value) {
+  return String(value || "")
+    .trim()
+    .toUpperCase();
+}
+
+function submitCodeword() {
+  const stage = currentStage();
+  const expected = normalizeWord(stage.codeword?.[state.language] ?? stage.codeword?.en ?? "");
+  const submitted = normalizeWord(codewordInput.value);
+
+  if (!expected || !submitted) {
+    return;
+  }
+
+  if (submitted === expected) {
+    state.justCompleted = true;
+    state.maxUnlockedStage = Math.max(state.maxUnlockedStage, Math.min(state.stageIndex + 1, STAGES.length - 1));
+    state.hints.unshift(t(state.language, "codewordSuccess"));
+    save();
+    renderStatus();
+    return;
+  }
+
+  state.hints.unshift(t(state.language, "codewordFail"));
   renderStatus();
 }
 
@@ -209,6 +248,13 @@ tutorialNext.addEventListener("click", () => {
 });
 
 tutorialSkip.addEventListener("click", closeTutorial);
+codewordSubmit.addEventListener("click", submitCodeword);
+codewordInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    submitCodeword();
+  }
+});
 
 function gameLoop() {
   renderer.draw({

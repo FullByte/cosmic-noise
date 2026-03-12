@@ -128,6 +128,12 @@
             <h2 data-i18n="decodedOutput">Decoded Output</h2>
             <span id="attempt-label">0</span>
           </div>
+          <div id="completion-status" class="completion-status" aria-live="polite"></div>
+          <div class="codeword-row">
+            <label for="codeword-input" data-i18n="codewordLabel">Codeword</label>
+            <input id="codeword-input" type="text" autocomplete="off" spellcheck="false" />
+            <button id="codeword-submit" class="small-btn" type="button" data-i18n="codewordSubmit">Unlock</button>
+          </div>
           <pre id="signal-output" class="output-screen"></pre>
           <div id="hint-output" class="hint-box"></div>
           <div class="actions">
