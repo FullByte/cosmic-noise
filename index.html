@@ -42,6 +42,18 @@
             <span data-i18n="clarity">Clarity</span>
             <strong id="clarity-label">0%</strong>
           </div>
+          <div class="lock-led-panel" aria-live="polite">
+            <div class="lock-led-row">
+              <span data-i18n="lockClarity">Clarity Lock</span>
+              <div id="lock-clarity-leds" class="lock-leds"></div>
+              <strong id="lock-clarity-value">0%</strong>
+            </div>
+            <div class="lock-led-row">
+              <span data-i18n="lockProgress">Stage Progress</span>
+              <div id="lock-progress-leds" class="lock-leds"></div>
+              <strong id="lock-progress-value">0%</strong>
+            </div>
+          </div>
           <div class="visual-debug" aria-live="polite">
             <p class="visual-debug-title" data-i18n="debugTelemetry">Visual Telemetry</p>
             <div class="visual-debug-grid">
@@ -63,33 +75,70 @@
 
           <div class="control-group">
             <p class="group-title" data-i18n="switches">Switches</p>
-            <label class="switch-row">
-              <span data-i18n="powerSwitch">Power</span>
-              <input id="power-switch" type="checkbox" />
-            </label>
-            <label class="switch-row">
-              <span data-i18n="phaseSwitch">Phase Invert</span>
-              <input id="phase-switch" type="checkbox" />
-            </label>
+            <div class="switch-bank">
+              <div class="io-switch blink-hint">
+                <div class="io-label" data-i18n="powerSwitch">Power</div>
+                <div class="io-switch-wrap">
+                  <input id="power-switch" type="checkbox" aria-label="Power I/O" />
+                  <span class="io-track">
+                    <span class="io-knob"></span>
+                    <span class="io-marks">
+                      <span class="io-off">O</span>
+                      <span class="io-on">I</span>
+                    </span>
+                  </span>
+                  <span class="io-alert-led" aria-hidden="true"></span>
+                </div>
+              </div>
+
+              <div class="io-switch">
+                <div class="io-label" data-i18n="phaseSwitch">Phase Invert</div>
+                <div class="io-switch-wrap">
+                  <input id="phase-switch" type="checkbox" aria-label="Phase invert I/O" />
+                  <span class="io-track">
+                    <span class="io-knob"></span>
+                    <span class="io-marks">
+                      <span class="io-off">O</span>
+                      <span class="io-on">I</span>
+                    </span>
+                  </span>
+                  <span class="io-alert-led" aria-hidden="true"></span>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div class="control-group">
-            <p class="group-title" data-i18n="knobs">Knobs</p>
-            <label>
-              <span data-i18n="freqKnob">Frequency</span>
-              <input id="freq-knob" type="range" min="0" max="100" value="50" />
-              <strong id="freq-value">50</strong>
-            </label>
-            <label>
-              <span data-i18n="fineKnob">Fine Tune</span>
-              <input id="fine-knob" type="range" min="-50" max="50" value="0" />
-              <strong id="fine-value">0</strong>
-            </label>
-            <label>
-              <span data-i18n="gainKnob">Gain</span>
-              <input id="gain-knob" type="range" min="0" max="100" value="40" />
-              <strong id="gain-value">40</strong>
-            </label>
+            <p class="group-title" data-i18n="freqMod">Frequenzmodulation</p>
+            <div class="rotary-grid">
+              <label class="rotary-field">
+                <span class="rotary-label" data-i18n="freqKnob">Frequency</span>
+                <div id="freq-rotary" class="rotary-shell">
+                  <div class="rotary-ticks"></div>
+                  <div id="freq-rotary-indicator" class="rotary-indicator"></div>
+                  <div class="rotary-core"></div>
+                </div>
+                <strong id="freq-value">50</strong>
+              </label>
+              <label class="rotary-field">
+                <span class="rotary-label" data-i18n="fineKnob">Fine Tune</span>
+                <div id="fine-rotary" class="rotary-shell">
+                  <div class="rotary-ticks"></div>
+                  <div id="fine-rotary-indicator" class="rotary-indicator"></div>
+                  <div class="rotary-core"></div>
+                </div>
+                <strong id="fine-value">0</strong>
+              </label>
+              <label class="rotary-field">
+                <span class="rotary-label" data-i18n="gainKnob">Gain</span>
+                <div id="gain-rotary" class="rotary-shell">
+                  <div class="rotary-ticks"></div>
+                  <div id="gain-rotary-indicator" class="rotary-indicator"></div>
+                  <div class="rotary-core"></div>
+                </div>
+                <strong id="gain-value">40</strong>
+              </label>
+            </div>
           </div>
 
           <div class="control-group" id="dial-group">

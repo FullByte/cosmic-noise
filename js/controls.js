@@ -35,12 +35,15 @@ function highlightPorts(patches) {
 export function wireControls({ state, onChange, onAddPatch, onClearPatches, onToggleLang, onToggleAudio, onResetProgress }) {
   const powerSwitch = document.getElementById("power-switch");
   const phaseSwitch = document.getElementById("phase-switch");
-  const freqKnob = document.getElementById("freq-knob");
-  const fineKnob = document.getElementById("fine-knob");
-  const gainKnob = document.getElementById("gain-knob");
   const freqValue = document.getElementById("freq-value");
   const fineValue = document.getElementById("fine-value");
   const gainValue = document.getElementById("gain-value");
+  const freqRotary = document.getElementById("freq-rotary");
+  const fineRotary = document.getElementById("fine-rotary");
+  const gainRotary = document.getElementById("gain-rotary");
+  const freqRotaryIndicator = document.getElementById("freq-rotary-indicator");
+  const fineRotaryIndicator = document.getElementById("fine-rotary-indicator");
+  const gainRotaryIndicator = document.getElementById("gain-rotary-indicator");
 
   const dialValue = document.getElementById("dial-value");
   const dialDown = document.getElementById("dial-down");
@@ -57,6 +60,39 @@ export function wireControls({ state, onChange, onAddPatch, onClearPatches, onTo
   const langBtn = document.getElementById("lang-toggle");
   const audioBtn = document.getElementById("audio-toggle");
   const resetBtn = document.getElementById("reset-progress");
+
+  const rotaryConfig = {
+    freq: {
+      key: "freq",
+      root: freqRotary,
+      indicator: freqRotaryIndicator,
+      valueEl: freqValue,
+      min: 0,
+      max: 100,
+      step: 1,
+      label: "Frequency rotary control",
+    },
+    fine: {
+      key: "fine",
+      root: fineRotary,
+      indicator: fineRotaryIndicator,
+      valueEl: fineValue,
+      min: -50,
+      max: 50,
+      step: 1,
+      label: "Fine tune rotary control",
+    },
+    gain: {
+      key: "gain",
+      root: gainRotary,
+      indicator: gainRotaryIndicator,
+      valueEl: gainValue,
+      min: 0,
+      max: 100,
+      step: 1,
+      label: "Gain rotary control",
+    },
+  };
 
   function stagePolicy() {
     const id = state.stageIndex + 1;
@@ -91,23 +127,137 @@ export function wireControls({ state, onChange, onAddPatch, onClearPatches, onTo
   function syncControls() {
     powerSwitch.checked = state.controls.power;
     phaseSwitch.checked = state.controls.phase;
-    freqKnob.value = String(state.controls.freq);
-    fineKnob.value = String(state.controls.fine);
-    gainKnob.value = String(state.controls.gain);
-    freqValue.textContent = String(state.controls.freq);
-    fineValue.textContent = String(state.controls.fine);
-    gainValue.textContent = String(state.controls.gain);
+    updateRotaryVisual("freq");
+    updateRotaryVisual("fine");
+    updateRotaryVisual("gain");
     dialValue.value = String(state.controls.dial);
     renderPatches(patchList, state.controls.patches);
     highlightPorts(state.controls.patches);
     applyStagePolicy();
   }
 
-  function attachNumberInput(input, key, labelEl) {
-    input.addEventListener("input", () => {
-      state.controls[key] = Number(input.value);
-      labelEl.textContent = input.value;
-      onChange();
+  function clampValue(value, min, max) {
+    return Math.max(min, Math.min(max, Math.round(value)));
+  }
+
+  function valueToAngle(value, min, max) {
+    const normalized = (value - min) / (max - min);
+    return -140 + normalized * 280;
+  }
+
+  function pointerToValue(root, clientX, clientY, min, max) {
+    const rect = root.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const dx = clientX - cx;
+    const dy = clientY - cy;
+
+    let deg = (Math.atan2(dy, dx) * 180) / Math.PI + 90;
+    if (deg > 180) deg -= 360;
+    if (deg < -180) deg += 360;
+    deg = Math.max(-140, Math.min(140, deg));
+
+    const normalized = (deg + 140) / 280;
+    return min + normalized * (max - min);
+  }
+
+  function updateRotaryVisual(controlKey) {
+    const cfg = rotaryConfig[controlKey];
+    if (!cfg) {
+      return;
+    }
+
+    const raw = Number(state.controls[cfg.key]);
+    const value = clampValue(Number.isNaN(raw) ? cfg.min : raw, cfg.min, cfg.max);
+    state.controls[cfg.key] = value;
+    if (cfg.valueEl) {
+      cfg.valueEl.textContent = String(value);
+    }
+    if (cfg.root) {
+      cfg.root.setAttribute("aria-valuenow", String(value));
+    }
+    if (cfg.indicator) {
+      const angle = valueToAngle(value, cfg.min, cfg.max);
+      cfg.indicator.style.transform = `translateX(-50%) rotate(${angle.toFixed(2)}deg)`;
+    }
+  }
+
+  function setControlValue(controlKey, nextValue) {
+    const cfg = rotaryConfig[controlKey];
+    if (!cfg) {
+      return;
+    }
+
+    const clamped = clampValue(nextValue, cfg.min, cfg.max);
+    if (state.controls[cfg.key] === clamped) {
+      return;
+    }
+
+    state.controls[cfg.key] = clamped;
+    updateRotaryVisual(controlKey);
+    onChange();
+  }
+
+  function setupRotary(controlKey) {
+    const cfg = rotaryConfig[controlKey];
+    if (!cfg || !cfg.root) {
+      return;
+    }
+
+    const root = cfg.root;
+    let dragging = false;
+
+    root.setAttribute("role", "slider");
+    root.setAttribute("tabindex", "0");
+    root.setAttribute("aria-label", cfg.label);
+    root.setAttribute("aria-valuemin", String(cfg.min));
+    root.setAttribute("aria-valuemax", String(cfg.max));
+
+    root.addEventListener("pointerdown", (event) => {
+      dragging = true;
+      root.setPointerCapture(event.pointerId);
+      setControlValue(controlKey, pointerToValue(root, event.clientX, event.clientY, cfg.min, cfg.max));
+    });
+
+    root.addEventListener("pointermove", (event) => {
+      if (!dragging) return;
+      setControlValue(controlKey, pointerToValue(root, event.clientX, event.clientY, cfg.min, cfg.max));
+    });
+
+    const endDrag = (event) => {
+      if (!dragging) return;
+      dragging = false;
+      if (root.hasPointerCapture(event.pointerId)) {
+        root.releasePointerCapture(event.pointerId);
+      }
+    };
+
+    root.addEventListener("pointerup", endDrag);
+    root.addEventListener("pointercancel", endDrag);
+
+    root.addEventListener("wheel", (event) => {
+      event.preventDefault();
+      const dir = event.deltaY > 0 ? -1 : 1;
+      setControlValue(controlKey, state.controls[cfg.key] + dir * cfg.step);
+    }, { passive: false });
+
+    root.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowRight" || event.key === "ArrowUp") {
+        setControlValue(controlKey, state.controls[cfg.key] + cfg.step);
+        event.preventDefault();
+      }
+      if (event.key === "ArrowLeft" || event.key === "ArrowDown") {
+        setControlValue(controlKey, state.controls[cfg.key] - cfg.step);
+        event.preventDefault();
+      }
+      if (event.key === "Home") {
+        setControlValue(controlKey, cfg.min);
+        event.preventDefault();
+      }
+      if (event.key === "End") {
+        setControlValue(controlKey, cfg.max);
+        event.preventDefault();
+      }
     });
   }
 
@@ -121,9 +271,9 @@ export function wireControls({ state, onChange, onAddPatch, onClearPatches, onTo
     onChange();
   });
 
-  attachNumberInput(freqKnob, "freq", freqValue);
-  attachNumberInput(fineKnob, "fine", fineValue);
-  attachNumberInput(gainKnob, "gain", gainValue);
+  setupRotary("freq");
+  setupRotary("fine");
+  setupRotary("gain");
 
   dialDown.addEventListener("click", () => {
     state.controls.dial = (state.controls.dial + 999) % 1000;
@@ -177,16 +327,12 @@ export function wireControls({ state, onChange, onAddPatch, onClearPatches, onTo
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "ArrowUp") {
-      state.controls.freq = Math.min(100, state.controls.freq + 1);
-      syncControls();
-      onChange();
+      setControlValue("freq", state.controls.freq + 1);
       return;
     }
 
     if (event.key === "ArrowDown") {
-      state.controls.freq = Math.max(0, state.controls.freq - 1);
-      syncControls();
-      onChange();
+      setControlValue("freq", state.controls.freq - 1);
     }
   });
 

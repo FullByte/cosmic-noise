@@ -27,6 +27,10 @@ const renderer = createRenderer(canvas);
 const confidenceMeter = document.getElementById("confidence-meter");
 const confidenceLabel = document.getElementById("confidence-label");
 const clarityLabel = document.getElementById("clarity-label");
+const lockClarityLeds = document.getElementById("lock-clarity-leds");
+const lockProgressLeds = document.getElementById("lock-progress-leds");
+const lockClarityValue = document.getElementById("lock-clarity-value");
+const lockProgressValue = document.getElementById("lock-progress-value");
 const debugFit = document.getElementById("debug-fit");
 const debugNoise = document.getElementById("debug-noise");
 const debugCurve = document.getElementById("debug-curve");
@@ -91,14 +95,45 @@ function applyLanguage() {
   ui.setAudioLabel(t(state.language, state.audioEnabled ? "audioOn" : "audioOff"));
 }
 
+function ensureLedStrip(container) {
+  if (!container || container.children.length) {
+    return;
+  }
+
+  for (let i = 0; i < 20; i += 1) {
+    const led = document.createElement("span");
+    led.className = "lock-led";
+    container.append(led);
+  }
+}
+
+function paintLedStrip(container, value, warnThreshold = 50) {
+  if (!container) {
+    return;
+  }
+
+  const leds = Array.from(container.children);
+  const lit = Math.round((Math.max(0, Math.min(100, value)) / 100) * leds.length);
+  leds.forEach((led, index) => {
+    const on = index < lit;
+    led.classList.toggle("on", on);
+    led.classList.toggle("warn", on && value < warnThreshold);
+  });
+}
+
 function renderStatus() {
   const stage = currentStage();
   const stageCleared = state.justCompleted || state.stageIndex < state.maxUnlockedStage;
+  const stageProgress = Math.max(0, Math.min(100, Math.round(((state.stageIndex + (stageCleared ? 1 : 0)) / STAGES.length) * 100)));
 
   stageChip.textContent = `${stage.name[state.language]} (${stage.id}/${STAGES.length})`;
   confidenceMeter.value = state.confidence;
   confidenceLabel.textContent = `${state.confidence}%`;
   clarityLabel.textContent = `${state.clarity}%`;
+  lockClarityValue.textContent = `${state.clarity}%`;
+  lockProgressValue.textContent = `${stageProgress}%`;
+  paintLedStrip(lockClarityLeds, state.clarity, 58);
+  paintLedStrip(lockProgressLeds, stageProgress, 35);
   attemptLabel.textContent = `${t(state.language, "attempts")}: ${state.attempts}`;
   completionStatus.textContent = `${t(state.language, "completionTarget")}: ${t(state.language, "clarity")} >= ${COMPLETION_CLARITY}% | ${t(state.language, "confidence")} >= ${COMPLETION_CONFIDENCE}% | ${t(state.language, "completionOrCodeword")} - ${stageCleared ? t(state.language, "completionReady") : t(state.language, "completionPending")}`;
   completionStatus.classList.toggle("ready", stageCleared);
@@ -363,6 +398,8 @@ function gameLoop() {
 }
 
 applyLanguage();
+ensureLedStrip(lockClarityLeds);
+ensureLedStrip(lockProgressLeds);
 ui.syncControls();
 renderStatus();
 if (!state.tutorialSeen) {
