@@ -146,7 +146,18 @@ function renderStatus() {
   if (!state.decodedText) {
     outputScreen.textContent = "...";
   } else {
-    outputScreen.textContent = state.decodedText;
+    // Highlight codeword in signal output
+    const stage = currentStage();
+    const codeword = stage.codeword?.[state.language] ?? stage.codeword?.en ?? "";
+    if (codeword) {
+      // Escape HTML and highlight codeword
+      const escaped = state.decodedText.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      const regex = new RegExp(codeword, "gi");
+      const highlighted = escaped.replace(regex, match => `<span class='codeword-highlight'>${match}</span>`);
+      outputScreen.innerHTML = highlighted;
+    } else {
+      outputScreen.textContent = state.decodedText;
+    }
   }
 
   hintOutput.innerHTML = "";
