@@ -43,6 +43,7 @@ export function createInitialState(saved) {
     clarity: 0,
     confidence: 0,
     decodedText: "",
+    codewordSeen: false,
     hints: [],
     justCompleted: false,
   };
@@ -57,6 +58,7 @@ export function createInitialState(saved) {
     stageIndex: clampStage(saved.stageIndex ?? 0),
     maxUnlockedStage: clampStage(saved.maxUnlockedStage ?? 0),
     controls: { ...defaultControls(saved.stageIndex ?? 0), ...(saved.controls ?? {}) },
+    codewordSeen: Boolean(saved.codewordSeen),
     hints: Array.isArray(saved.hints) ? saved.hints : [],
   };
 }
@@ -74,5 +76,6 @@ export function serializeState(state) {
     attempts: state.attempts,
     tutorialSeen: state.tutorialSeen,
     controls: state.controls,
+    codewordSeen: state.codewordSeen,
   };
 }

@@ -15,6 +15,7 @@ function applyLoadStartValues() {
   state.clarity = 0;
   state.confidence = 0;
   state.decodedText = "";
+  state.codewordSeen = false;
   state.hints = [];
   state.justCompleted = false;
 }
@@ -88,6 +89,14 @@ function save() {
   saveState(serializeState(state));
 }
 
+function escapeRegex(value) {
+  return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function isCodewordEntryUnlocked() {
+  return Boolean(state.controls.power) && state.clarity >= 80 && state.codewordSeen;
+}
+
 function applyLanguage() {
   const langStrings = STRINGS[state.language];
   document.documentElement.lang = state.language;
@@ -132,6 +141,7 @@ function renderStatus() {
   const stageCleared = state.justCompleted || state.stageIndex < state.maxUnlockedStage;
   const stageProgress = Math.max(0, Math.min(100, Math.round(((state.stageIndex + (stageCleared ? 1 : 0)) / STAGES.length) * 100)));
   const powerOn = Boolean(state.controls.power);
+  let codewordHighlighted = false;
 
   stageChip.textContent = `${stage.name[state.language]} (${stage.id}/${STAGES.length})`;
   clarityLabel.textContent = `${state.clarity}%`;
@@ -147,19 +157,27 @@ function renderStatus() {
   } else if (!state.decodedText) {
     outputScreen.textContent = "...";
   } else {
-    // Highlight codeword in signal output
-    const stage = currentStage();
     const codeword = stage.codeword?.[state.language] ?? stage.codeword?.en ?? "";
     if (codeword) {
-      // Escape HTML and highlight codeword
       const escaped = state.decodedText.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-      const regex = new RegExp(codeword, "gi");
+      const regex = new RegExp(escapeRegex(codeword), "gi");
+      codewordHighlighted = regex.test(state.decodedText);
+      regex.lastIndex = 0;
       const highlighted = escaped.replace(regex, match => `<span class='codeword-highlight'>${match}</span>`);
       outputScreen.innerHTML = highlighted;
     } else {
       outputScreen.textContent = state.decodedText;
     }
   }
+
+  if (powerOn && codewordHighlighted && !state.codewordSeen) {
+    state.codewordSeen = true;
+    save();
+  }
+
+  const codewordUnlocked = isCodewordEntryUnlocked();
+  codewordInput.disabled = !codewordUnlocked;
+  codewordSubmit.disabled = !codewordUnlocked;
 
   renderHintBox();
 }
@@ -247,6 +265,7 @@ function advanceStage() {
   state.clarity = 0;
   state.confidence = 0;
   state.decodedText = "";
+  state.codewordSeen = false;
   state.hints = [];
   state.justCompleted = false;
   codewordInput.value = "";
@@ -271,6 +290,10 @@ function normalizeWord(value) {
 }
 
 function submitCodeword() {
+  if (!isCodewordEntryUnlocked()) {
+    return;
+  }
+
   const stage = currentStage();
   const expected = normalizeWord(stage.codeword?.[state.language] ?? stage.codeword?.en ?? "");
   const submitted = normalizeWord(codewordInput.value);
