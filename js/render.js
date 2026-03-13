@@ -30,6 +30,7 @@ uniform float uFreq;
 uniform float uFine;
 uniform float uGain;
 uniform float uDial;
+uniform vec3 uColorErrVec;
 uniform float uPatchCount;
 uniform float uStage;
 uniform float uFit;
@@ -159,6 +160,7 @@ void main() {
   vec3 neon = vec3(0.98, 0.18 + uErrRoute * 0.32, 0.62 + uErrDial * 0.24) * carrier * (0.12 + mismatch * 0.5);
   vec3 amberTag = vec3(0.95, 0.72, 0.28) * smoothstep(0.18, 0.0, length(uv - vec2(0.5, 0.5))) * (0.03 + quality * 0.15);
   vec3 gainTint = vec3(0.1 + uErrGain * 0.45, 0.05, 0.18 + uErrGain * 0.3);
+  vec3 colorErrorTint = uColorErrVec * (0.12 + dialDirect * 0.14 + carrier * 0.24 + routeGlitchAmt * 0.08);
   vec3 patchTint = vec3(
     0.08 + patchDirect * (0.12 + uRouteSigX * 0.24),
     0.2 + patchDirect * (0.1 + uRouteSigY * 0.3),
@@ -171,6 +173,7 @@ void main() {
   color += neon;
   color += amberTag;
   color += gainTint * (0.03 + uErrGain * 0.12) * (1.0 - lock * 0.55);
+  color += colorErrorTint * (1.0 - lock * 0.42);
   color += patchTint * patchMask * (1.0 - lock * 0.5);
   color += (grain - 0.5) * (0.02 + dirt * 0.1) * (1.0 - lock * 0.7);
   color += tearing * (1.0 - lock * 0.72);
@@ -208,6 +211,31 @@ function clamp01(value) {
 function closeness(value, target, tolerance) {
   const safeTol = Math.max(1, tolerance || 1);
   return clamp01(1 - Math.abs(value - target) / safeTol);
+}
+
+function getColorMix(controls) {
+  return {
+    r: clamp01((controls.colorR || 0) / 255),
+    g: clamp01((controls.colorG || 0) / 255),
+    b: clamp01((controls.colorB || 0) / 255),
+  };
+}
+
+function getColorDrive(controls) {
+  const r = Math.max(0, Math.min(255, Math.round(controls.colorR || 0)));
+  const g = Math.max(0, Math.min(255, Math.round(controls.colorG || 0)));
+  const b = Math.max(0, Math.min(255, Math.round(controls.colorB || 0)));
+  const spread = Math.abs(r - g) + Math.abs(g - b) + Math.abs(b - r);
+  const composite = (r * 17 + g * 31 + b * 47 + spread * 13) % 1000;
+  return composite / 999;
+}
+
+function getColorErrorVec(controls, target) {
+  return {
+    r: clamp01(Math.abs((controls.colorR || 0) - (target.colorR || 0)) / 255),
+    g: clamp01(Math.abs((controls.colorG || 0) - (target.colorG || 0)) / 255),
+    b: clamp01(Math.abs((controls.colorB || 0) - (target.colorB || 0)) / 255),
+  };
 }
 
 function routeMatchScore(currentRoutes, expectedRoutes) {
@@ -290,9 +318,14 @@ function computeVisualMetrics(stage, controls) {
   const freqScore = closeness(controls.freq, target.freq, tol.freq);
   const fineScore = closeness(controls.fine, target.fine, tol.fine);
   const gainScore = closeness(controls.gain, target.gain, tol.gain);
-  const dialScore = closeness(controls.dial, target.dial, tol.dial);
+  const colorRScore = closeness(controls.colorR, target.colorR, tol.colorR);
+  const colorGScore = closeness(controls.colorG, target.colorG, tol.colorG);
+  const colorBScore = closeness(controls.colorB, target.colorB, tol.colorB);
+  const colorScore = (colorRScore + colorGScore + colorBScore) / 3;
+  const driveScore = closeness(getColorDrive(controls), getColorDrive(target), 0.22);
   const routeScore = routeMatchScore(controls.patches, target.routes);
   const routeSig = buildRouteSignature(controls.patches);
+  const colorErrVec = getColorErrorVec(controls, target);
 
   const fit = clamp01(
     powerScore * 0.16 +
@@ -300,7 +333,7 @@ function computeVisualMetrics(stage, controls) {
       freqScore * 0.2 +
       fineScore * 0.16 +
       gainScore * 0.16 +
-      dialScore * 0.14 +
+      colorScore * 0.14 +
       routeScore * 0.1
   );
 
@@ -311,8 +344,9 @@ function computeVisualMetrics(stage, controls) {
     errFreq: 1 - freqScore,
     errFine: 1 - fineScore,
     errGain: 1 - gainScore,
-    errDial: 1 - dialScore,
+    errDial: 1 - driveScore,
     errRoute: 1 - routeScore,
+    colorErrVec,
     routeSig,
   };
 }
@@ -320,7 +354,7 @@ function computeVisualMetrics(stage, controls) {
 function computeDebugSnapshot(metrics, clarity, controls) {
   const quality = clamp01(clarity / 100);
   const gain = clamp01(controls.gain / 100);
-  const dialDirect = Math.abs(Math.sin(clamp01(controls.dial / 999) * Math.PI * 6));
+  const dialDirect = Math.abs(Math.sin(getColorDrive(controls) * Math.PI * 6));
   const patchDirect = clamp01((controls.patches?.length || 0) / 6);
   const lock = clamp01((metrics.fit - 0.9) / 0.1);
 
@@ -333,10 +367,10 @@ function computeDebugSnapshot(metrics, clarity, controls) {
       metrics.errFreq * 0.08 +
       metrics.errPower * 0.08 +
       metrics.errPhase * 0.06 +
-        metrics.errDial * 0.07 +
-        patchDirect * 0.12 +
-          dialDirect * 0.1 +
-          metrics.routeSig.feedback * 0.06
+      metrics.errDial * 0.07 +
+      patchDirect * 0.12 +
+      dialDirect * 0.1 +
+      metrics.routeSig.feedback * 0.06
   );
   const noise = clamp01(noiseBase * (1 - lock * 0.72));
 
@@ -362,6 +396,28 @@ function resizeRenderer(canvas, renderer) {
   return { width, height };
 }
 
+function buildFallbackTracePath(width, height, time, controls, metrics, lock) {
+  const path = new Path2D();
+  const xStep = Math.max(1, Math.floor(width / 320));
+
+  for (let x = 0; x <= width; x += xStep) {
+    const xNorm = x / Math.max(1, width);
+    const yPos =
+      height *
+      (0.5 +
+        Math.sin((xNorm) * (16 + controls.freq * 0.6 + metrics.errFreq * 14) + time * (1.2 + controls.fine * 0.03) + (controls.phase ? Math.PI : 0) + metrics.errPhase * 0.8) *
+          ((0.003 + metrics.errFine * 0.055 + (1 - metrics.fit) * 0.08) * (1 - lock * 0.75)));
+
+    if (x === 0) {
+      path.moveTo(x, yPos);
+    } else {
+      path.lineTo(x, yPos);
+    }
+  }
+
+  return path;
+}
+
 function drawFallback2d(ctx, canvas, frame, clarity, confidence, controls, stage) {
   const width = canvas.width;
   const height = canvas.height;
@@ -369,7 +425,9 @@ function drawFallback2d(ctx, canvas, frame, clarity, confidence, controls, stage
   const trust = clamp01(confidence / 100);
   const metrics = computeVisualMetrics(stage, controls);
   const gain = clamp01(controls.gain / 100);
-  const dialNorm = clamp01(controls.dial / 999);
+  const dialNorm = getColorDrive(controls);
+  const colorMix = getColorMix(controls);
+  const colorErrVec = metrics.colorErrVec;
   const dialDirect = Math.abs(Math.sin(dialNorm * Math.PI * 6));
   const patchDirect = clamp01((controls.patches?.length || 0) / 6);
   const dirt = clamp01(
@@ -381,9 +439,9 @@ function drawFallback2d(ctx, canvas, frame, clarity, confidence, controls, stage
       metrics.errFreq * 0.08 +
       metrics.errPower * 0.08 +
       metrics.errPhase * 0.06 +
-        metrics.errDial * 0.07 +
-        patchDirect * 0.12 +
-        dialDirect * 0.1
+      metrics.errDial * 0.07 +
+      patchDirect * 0.12 +
+      dialDirect * 0.1
   );
   const lock = clamp01((metrics.fit - 0.9) / 0.1);
 
@@ -429,9 +487,12 @@ function drawFallback2d(ctx, canvas, frame, clarity, confidence, controls, stage
       const chroma = (1 - metrics.fit) * 55 + patchDirect * 24;
       const routeFlash = Math.max(0, Math.sin((y / height) * (180 + metrics.routeSig.z * 120) + time * (18 + metrics.routeSig.x * 6))) * Math.max(metrics.errRoute * 24, patchDirect * 18);
       const phaseTint = metrics.errPhase * 16;
-      const r = Math.min(255, Math.max(0, (base * 120 + carrier * (28 + chroma * 0.35) + cleanLine * 90 + routeFlash + phaseTint + dialWobble + metrics.routeSig.x * 10) * 1.03));
-      const g = Math.min(255, Math.max(0, base * 190 + carrier * 120 + cleanLine * 170 + routeFlash * 0.4 + metrics.routeSig.y * 15));
-      const b = Math.min(255, Math.max(0, base * 160 + carrier * (72 + chroma * 0.2) + cleanLine * 70 + metrics.errGain * 18 + metrics.routeSig.z * 14));
+      const colorCancelR = colorErrVec.r * (40 + carrier * 68 + dialDirect * 24);
+      const colorCancelG = colorErrVec.g * (40 + carrier * 68 + dialDirect * 24);
+      const colorCancelB = colorErrVec.b * (40 + carrier * 68 + dialDirect * 24);
+      const r = Math.min(255, Math.max(0, (base * 120 + carrier * (28 + chroma * 0.35) + cleanLine * 90 + routeFlash + phaseTint + dialWobble + metrics.routeSig.x * 10 + colorCancelR) * 1.03));
+      const g = Math.min(255, Math.max(0, base * 190 + carrier * 120 + cleanLine * 170 + routeFlash * 0.4 + metrics.routeSig.y * 15 + colorCancelG));
+      const b = Math.min(255, Math.max(0, base * 160 + carrier * (72 + chroma * 0.2) + cleanLine * 70 + metrics.errGain * 18 + metrics.routeSig.z * 14 + colorCancelB));
 
       pixels[i] = r;
       pixels[i + 1] = g;
@@ -441,6 +502,35 @@ function drawFallback2d(ctx, canvas, frame, clarity, confidence, controls, stage
   }
 
   ctx.putImageData(img, 0, 0);
+
+  if (powerOn) {
+    const tracePath = buildFallbackTracePath(width, height, time, controls, metrics, lock);
+    const glowColor = `rgba(${Math.round(110 + colorMix.r * 45)}, ${Math.round(215 + colorMix.g * 25)}, ${Math.round(150 + colorMix.b * 35)}, ${0.22 + trust * 0.16})`;
+    const traceColor = `rgba(${Math.round(210 + colorMix.r * 25)}, ${Math.round(245 + colorMix.g * 10)}, ${Math.round(220 + colorMix.b * 18)}, 0.95)`;
+
+    ctx.save();
+    ctx.globalCompositeOperation = "screen";
+
+    ctx.strokeStyle = glowColor;
+    ctx.lineWidth = Math.max(5, height * 0.016);
+    ctx.shadowColor = glowColor;
+    ctx.shadowBlur = Math.max(10, height * 0.026);
+    ctx.stroke(tracePath);
+
+    ctx.strokeStyle = traceColor;
+    ctx.lineWidth = Math.max(1.5, height * 0.0035);
+    ctx.shadowBlur = Math.max(4, height * 0.01);
+    ctx.stroke(tracePath);
+    ctx.restore();
+  }
+
+  ctx.save();
+  ctx.globalCompositeOperation = "multiply";
+  ctx.fillStyle = "rgba(8, 16, 12, 0.08)";
+  for (let y = 0; y < height; y += 3) {
+    ctx.fillRect(0, y, width, 1);
+  }
+  ctx.restore();
 }
 
 function buildThreeRenderer(canvas, THREE) {
@@ -461,6 +551,7 @@ function buildThreeRenderer(canvas, THREE) {
     uFine: { value: 0.5 },
     uGain: { value: 0.4 },
     uDial: { value: 0 },
+    uColorErrVec: { value: new THREE.Vector3(0, 0, 0) },
     uPatchCount: { value: 0 },
     uStage: { value: 1 },
     uFit: { value: 0 },
@@ -493,11 +584,18 @@ function buildThreeRenderer(canvas, THREE) {
 }
 
 export function createRenderer(canvas) {
-  const ctx2d = canvas.getContext("2d");
+  let ctx2d = null;
   let frame = 0;
   let threeReady = null;
   let loadingStarted = false;
   let loadingFailed = false;
+
+  function get2dContext() {
+    if (!ctx2d) {
+      ctx2d = canvas.getContext("2d");
+    }
+    return ctx2d;
+  }
 
   function ensureThree() {
     if (loadingStarted || loadingFailed) {
@@ -521,7 +619,9 @@ export function createRenderer(canvas) {
     const debug = computeDebugSnapshot(metrics, clarity, controls);
 
     if (!threeReady || loadingFailed) {
-      drawFallback2d(ctx2d, canvas, frame, clarity, confidence, controls, stage);
+      if (loadingFailed) {
+        drawFallback2d(get2dContext(), canvas, frame, clarity, confidence, controls, stage);
+      }
       return debug;
     }
 
@@ -537,7 +637,8 @@ export function createRenderer(canvas) {
     uniforms.uFreq.value = clamp01(controls.freq / 100);
     uniforms.uFine.value = clamp01((controls.fine + 50) / 100);
     uniforms.uGain.value = clamp01(controls.gain / 100);
-    uniforms.uDial.value = clamp01(controls.dial / 999);
+    uniforms.uDial.value = getColorDrive(controls);
+    uniforms.uColorErrVec.value.set(metrics.colorErrVec.r, metrics.colorErrVec.g, metrics.colorErrVec.b);
     uniforms.uPatchCount.value = Array.isArray(controls.patches) ? controls.patches.length : 0;
     uniforms.uStage.value = stage.id;
     uniforms.uFit.value = metrics.fit;

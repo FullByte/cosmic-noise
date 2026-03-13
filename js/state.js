@@ -24,7 +24,9 @@ export function defaultControls(stageIndex = 0) {
     freq: modulationDefaults.freq,
     fine: modulationDefaults.fine,
     gain: modulationDefaults.gain,
-    dial: 0,
+    colorR: 0,
+    colorG: 0,
+    colorB: 0,
     patches: [],
   };
 }

@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Cosmic Noise Decoder</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%2307100d'/%3E%3Cpath d='M8 33c7-13 12-13 19 0s12 13 19 0 12-13 18 0' fill='none' stroke='%237cffd0' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -15,29 +16,18 @@
   <body>
     <div class="bg-grid" aria-hidden="true"></div>
     <div class="app-shell">
-      <header class="topbar panel">
-        <div class="brand-wrap">
-          <p class="brand-kicker" data-i18n="brandKicker">ANALOG INTERCEPT NODE</p>
-          <h1 class="brand-title" data-i18n="brandTitle">White Noise Cipher Console</h1>
-        </div>
-        <div class="topbar-actions">
-          <select id="lang-select" class="topbar-select" aria-label="Language">
-            <option value="en">English</option>
-            <option value="de">Deutsch</option>
-          </select>
-          <button id="audio-toggle" class="small-btn" type="button" data-i18n="audioOff">Audio: Off</button>
-          <button id="reset-progress" class="small-btn danger" type="button" data-i18n="resetProgress">Reset</button>
-        </div>
-      </header>
-
       <main class="main-layout">
         <section class="signal-zone panel" aria-label="Signal Visualization">
-          <div class="section-head">
-            <h2 data-i18n="signalView">Signal View</h2>
-            <div class="meter-wrap">
-              <label for="confidence-meter" data-i18n="confidence">Confidence</label>
-              <progress id="confidence-meter" max="100" value="0"></progress>
-              <span id="confidence-label">0%</span>
+          <div class="signal-toolbar">
+            <h1 class="brand-title" data-i18n="brandTitle">White Noise Cipher Console</h1>
+            <div class="topbar-actions">
+              <select id="lang-select" class="topbar-select" aria-label="Language">
+                <option value="en">English</option>
+                <option value="de">Deutsch</option>
+              </select>
+              <button id="help-open" class="small-btn" type="button" data-i18n="helpButton">Hilfe</button>
+              <button id="audio-toggle" class="small-btn" type="button" data-i18n="audioOff">Audio: Off</button>
+              <button id="reset-progress" class="small-btn danger" type="button" data-i18n="resetProgress">Reset</button>
             </div>
           </div>
           <canvas id="signal-canvas" width="960" height="480"></canvas>
@@ -68,17 +58,31 @@
               <strong id="debug-curve">0%</strong>
             </div>
           </div>
+
+          <div class="output-zone output-zone-inline">
+            <div class="section-head">
+              <h2 data-i18n="decodedOutput">Decoded Output</h2>
+            </div>
+            <div class="codeword-row">
+              <label for="codeword-input" data-i18n="codewordLabel">Codeword</label>
+              <input id="codeword-input" type="text" autocomplete="off" spellcheck="false" />
+              <button id="codeword-submit" class="small-btn" type="button" data-i18n="codewordSubmit">Unlock</button>
+            </div>
+            <pre id="signal-output" class="output-screen"></pre>
+          </div>
         </section>
 
         <section class="control-zone panel" aria-label="Control Rack">
-          <div id="hint-output" class="hint-box"></div>
+          <div id="hint-output" class="hint-box">
+            <p id="hint-text" class="hint-text">...</p>
+            <button id="hint-next" class="small-btn" type="button" data-i18n="hintNextButton">Nächster Tipp</button>
+          </div>
           <div class="section-head">
             <h2 data-i18n="controlRack">Control Rack</h2>
             <span class="stage-chip" id="stage-chip">Stage 1</span>
           </div>
 
           <div class="control-group">
-            <p class="group-title" data-i18n="switches">Switches</p>
             <div class="switch-bank">
               <div class="io-switch blink-hint">
                 <input id="power-switch" type="checkbox" aria-label="Power I/O" />
@@ -117,7 +121,6 @@
           </div>
 
           <div class="control-group">
-            <p class="group-title" data-i18n="freqMod">Frequenzmodulation</p>
             <div class="rotary-grid">
               <label class="rotary-field">
                 <span class="rotary-label" data-i18n="freqKnob">Frequency</span>
@@ -149,12 +152,24 @@
             </div>
           </div>
 
-          <div class="control-group" id="dial-group">
-            <p class="group-title" data-i18n="dial">Number Dial</p>
-            <div class="dial-wrap">
-              <button id="dial-down" class="dial-btn" type="button">-</button>
-              <input id="dial-value" type="number" min="0" max="999" step="1" value="0" aria-label="Number dial value" />
-              <button id="dial-up" class="dial-btn" type="button">+</button>
+          <div class="control-group" id="color-group">
+            <p class="group-title" data-i18n="rgbMixer">Color Code</p>
+            <div class="color-grid">
+              <label class="color-field color-field-red">
+                <span class="color-label" data-i18n="colorRed">Red</span>
+                <input id="color-red" class="color-picker" type="color" value="#010000" aria-label="Red color channel" />
+                <strong id="color-red-value">#000000</strong>
+              </label>
+              <label class="color-field color-field-green">
+                <span class="color-label" data-i18n="colorGreen">Green</span>
+                <input id="color-green" class="color-picker" type="color" value="#000100" aria-label="Green color channel" />
+                <strong id="color-green-value">#000000</strong>
+              </label>
+              <label class="color-field color-field-blue">
+                <span class="color-label" data-i18n="colorBlue">Blue</span>
+                <input id="color-blue" class="color-picker" type="color" value="#000001" aria-label="Blue color channel" />
+                <strong id="color-blue-value">#000000</strong>
+              </label>
             </div>
           </div>
 
@@ -190,19 +205,6 @@
           </div>
         </section>
 
-        <section class="output-zone panel" aria-label="Decoded Output">
-          <div class="section-head">
-            <h2 data-i18n="decodedOutput">Decoded Output</h2>
-            <span id="attempt-label">0</span>
-          </div>
-          <div id="completion-status" class="completion-status" aria-live="polite"></div>
-          <div class="codeword-row">
-            <label for="codeword-input" data-i18n="codewordLabel">Codeword</label>
-            <input id="codeword-input" type="text" autocomplete="off" spellcheck="false" />
-            <button id="codeword-submit" class="small-btn" type="button" data-i18n="codewordSubmit">Unlock</button>
-          </div>
-          <pre id="signal-output" class="output-screen"></pre>
-        </section>
       </main>
     </div>
 
@@ -233,7 +235,40 @@
         <h3 id="victory-title"></h3>
         <p id="victory-body"></p>
         <div class="actions">
-          <button id="victory-close" class="primary-btn" type="button" data-i18n="victoryClose">Schliessen</button>
+          <button id="victory-close" class="primary-btn" type="button" data-i18n="victoryClose">Schließen</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="help-overlay" class="tutorial-overlay" role="dialog" aria-modal="true" aria-labelledby="help-title">
+      <div class="tutorial-card panel help-card">
+        <h3 id="help-title">Hilfe / Help</h3>
+        <div class="help-grid">
+          <section class="help-section" aria-label="Spielhilfe Deutsch">
+            <h4>Deutsch</h4>
+            <p>Du entschlüsselst ein Signal, indem du das Steuerpult so nah wie möglich an die Zielkonfiguration der aktuellen Stufe bringst.</p>
+            <ul>
+              <li>Strom, Phase, Frequenz, Feinabgleich und Verstärkung beeinflussen direkt Klarheit, Rauschen und Wellenform.</li>
+              <li>Der Farbcode steuert eine zusätzliche RGB-Störung. Je näher R, G und B am Ziel liegen, desto mehr verschwindet diese Farbstörung aus dem Bild.</li>
+              <li>Das Patchfeld wird später freigeschaltet. Nur die richtigen Patchpunkte und Verbindungen helfen, die Stufe sauber zu locken.</li>
+              <li>Oben im Hinweisfeld wird immer nur ein Tipp gezeigt. Mit `Nächster Tipp` kannst du endlos durch alle aktuellen Tipps blättern.</li>
+              <li>Wenn Klarheit und Konfidenz hoch genug sind, oder du das richtige Codewort erkennst, wird die nächste Stufe freigeschaltet.</li>
+            </ul>
+          </section>
+          <section class="help-section" aria-label="Game help English">
+            <h4>English</h4>
+            <p>You decode the signal by bringing the control rack as close as possible to the target setup of the current stage.</p>
+            <ul>
+              <li>Power, phase, frequency, fine tune, and gain directly affect clarity, noise, and waveform shape.</li>
+              <li>The color code adds an RGB interference layer. The closer R, G, and B are to the target, the more that color interference cancels out.</li>
+              <li>The patch panel unlocks later. Only the correct patch points and routes help you lock the stage cleanly.</li>
+              <li>The hint box shows one tip at a time. Use `Next Hint` to cycle endlessly through all current tips.</li>
+              <li>When clarity and confidence are high enough, or you identify the correct codeword, the next stage unlocks.</li>
+            </ul>
+          </section>
+        </div>
+        <div class="actions">
+          <button id="help-close" class="primary-btn" type="button">Schließen / Close</button>
         </div>
       </div>
     </div>

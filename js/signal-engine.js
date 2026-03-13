@@ -41,6 +41,36 @@ function getRequiredPatchPorts(routes) {
   return portOrder.filter((port) => ports.has(port));
 }
 
+function formatList(items, language) {
+  if (!items.length) {
+    return "";
+  }
+  if (items.length === 1) {
+    return items[0];
+  }
+  if (items.length === 2) {
+    return language === "de" ? `${items[0]} und ${items[1]}` : `${items[0]} and ${items[1]}`;
+  }
+
+  const last = items[items.length - 1];
+  const rest = items.slice(0, -1).join(", ");
+  return language === "de" ? `${rest} und ${last}` : `${rest}, and ${last}`;
+}
+
+function getWeakColorChannels(scores, language, textLookup) {
+  const ranked = [
+    { label: textLookup("colorRed"), score: scores.colorR },
+    { label: textLookup("colorGreen"), score: scores.colorG },
+    { label: textLookup("colorBlue"), score: scores.colorB },
+  ]
+    .filter((entry) => entry.score < 0.84)
+    .sort((a, b) => a.score - b.score)
+    .slice(0, 2)
+    .map((entry) => entry.label);
+
+  return formatList(ranked, language);
+}
+
 export function evaluateSignal(stage, controls, language, textLookup) {
   const target = stage.target;
   const tol = stage.tolerance;
@@ -50,7 +80,10 @@ export function evaluateSignal(stage, controls, language, textLookup) {
   const freqScore = closeness(controls.freq, target.freq, tol.freq);
   const fineScore = closeness(controls.fine, target.fine, tol.fine);
   const gainScore = closeness(controls.gain, target.gain, tol.gain);
-  const dialScore = closeness(controls.dial, target.dial, tol.dial);
+  const colorRScore = closeness(controls.colorR, target.colorR, tol.colorR);
+  const colorGScore = closeness(controls.colorG, target.colorG, tol.colorG);
+  const colorBScore = closeness(controls.colorB, target.colorB, tol.colorB);
+  const colorScore = (colorRScore + colorGScore + colorBScore) / 3;
   const routeScore = routeMatches(controls.patches, target.routes);
 
   const weighted =
@@ -59,7 +92,7 @@ export function evaluateSignal(stage, controls, language, textLookup) {
     freqScore * 0.2 +
     fineScore * 0.16 +
     gainScore * 0.16 +
-    dialScore * 0.14 +
+    colorScore * 0.14 +
     routeScore * 0.1;
 
   const clarity = Math.round(clamp01(weighted) * 100);
@@ -79,6 +112,18 @@ export function evaluateSignal(stage, controls, language, textLookup) {
     hints.unshift(textLookup("hintClose"));
   } else {
     hints.unshift(textLookup("hintPowerOn"));
+  }
+
+  if (stage.id > 1 && colorScore < 0.95) {
+    hints.push(colorScore < 0.5 ? textLookup("hintRgbFar") : textLookup("hintRgbClose"));
+    const weakChannels = getWeakColorChannels(
+      { colorR: colorRScore, colorG: colorGScore, colorB: colorBScore },
+      language,
+      textLookup
+    );
+    if (weakChannels) {
+      hints.push(textLookup("hintRgbChannels").replace("{channels}", weakChannels));
+    }
   }
 
   const requiredPatchPorts = getRequiredPatchPorts(target.routes);

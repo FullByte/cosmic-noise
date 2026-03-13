@@ -24,8 +24,6 @@ applyLoadStartValues();
 const canvas = document.getElementById("signal-canvas");
 const renderer = createRenderer(canvas);
 
-const confidenceMeter = document.getElementById("confidence-meter");
-const confidenceLabel = document.getElementById("confidence-label");
 const clarityLabel = document.getElementById("clarity-label");
 const lockClarityLeds = document.getElementById("lock-clarity-leds");
 const lockProgressLeds = document.getElementById("lock-progress-leds");
@@ -35,12 +33,12 @@ const debugFit = document.getElementById("debug-fit");
 const debugNoise = document.getElementById("debug-noise");
 const debugCurve = document.getElementById("debug-curve");
 const outputScreen = document.getElementById("signal-output");
-const hintOutput = document.getElementById("hint-output");
-const completionStatus = document.getElementById("completion-status");
+const hintText = document.getElementById("hint-text");
+const hintNext = document.getElementById("hint-next");
 const codewordInput = document.getElementById("codeword-input");
 const codewordSubmit = document.getElementById("codeword-submit");
 const stageChip = document.getElementById("stage-chip");
-const attemptLabel = document.getElementById("attempt-label");
+const helpOpen = document.getElementById("help-open");
 
 const tutorialOverlay = document.getElementById("tutorial-overlay");
 const tutorialTitle = document.getElementById("tutorial-title");
@@ -56,9 +54,13 @@ const victoryOverlay = document.getElementById("victory-overlay");
 const victoryTitle = document.getElementById("victory-title");
 const victoryBody = document.getElementById("victory-body");
 const victoryClose = document.getElementById("victory-close");
+const helpOverlay = document.getElementById("help-overlay");
+const helpClose = document.getElementById("help-close");
 
 let tutorialStep = 0;
 let lastLiveEvalAt = 0;
+let hintIndex = 0;
+let lastHintSignature = "";
 
 const ui = wireControls({
   state,
@@ -129,21 +131,20 @@ function renderStatus() {
   const stage = currentStage();
   const stageCleared = state.justCompleted || state.stageIndex < state.maxUnlockedStage;
   const stageProgress = Math.max(0, Math.min(100, Math.round(((state.stageIndex + (stageCleared ? 1 : 0)) / STAGES.length) * 100)));
+  const powerOn = Boolean(state.controls.power);
 
   stageChip.textContent = `${stage.name[state.language]} (${stage.id}/${STAGES.length})`;
-  confidenceMeter.value = state.confidence;
-  confidenceLabel.textContent = `${state.confidence}%`;
   clarityLabel.textContent = `${state.clarity}%`;
   lockClarityValue.textContent = `${state.clarity}%`;
   lockProgressValue.textContent = `${stageProgress}%`;
   paintLedStrip(lockClarityLeds, state.clarity, 58);
   paintLedStrip(lockProgressLeds, stageProgress, 35);
-  attemptLabel.textContent = `${t(state.language, "attempts")}: ${state.attempts}`;
-  completionStatus.textContent = `${t(state.language, "completionTarget")}: ${t(state.language, "clarity")} >= ${COMPLETION_CLARITY}% | ${t(state.language, "confidence")} >= ${COMPLETION_CONFIDENCE}% | ${t(state.language, "completionOrCodeword")} - ${stageCleared ? t(state.language, "completionReady") : t(state.language, "completionPending")}`;
-  completionStatus.classList.toggle("ready", stageCleared);
-  completionStatus.classList.toggle("pending", !stageCleared);
 
-  if (!state.decodedText) {
+  outputScreen.classList.toggle("display-off", !powerOn);
+
+  if (!powerOn) {
+    outputScreen.textContent = "";
+  } else if (!state.decodedText) {
     outputScreen.textContent = "...";
   } else {
     // Highlight codeword in signal output
@@ -160,13 +161,26 @@ function renderStatus() {
     }
   }
 
-  hintOutput.innerHTML = "";
-  state.hints.forEach((line) => {
-    const p = document.createElement("p");
-    p.textContent = line;
-    p.style.margin = "0 0 4px";
-    hintOutput.append(p);
-  });
+  renderHintBox();
+}
+
+function renderHintBox() {
+  const hints = Array.isArray(state.hints) ? state.hints : [];
+  const signature = hints.join("||");
+  if (signature !== lastHintSignature) {
+    hintIndex = 0;
+    lastHintSignature = signature;
+  }
+
+  if (!hints.length) {
+    hintText.textContent = "...";
+    hintNext.disabled = true;
+    return;
+  }
+
+  hintIndex = ((hintIndex % hints.length) + hints.length) % hints.length;
+  hintText.textContent = hints[hintIndex];
+  hintNext.disabled = false;
 }
 
 function runEvaluation({ countAttempt }) {
@@ -362,6 +376,14 @@ function closeVictoryDialog() {
   victoryOverlay.classList.remove("visible");
 }
 
+function openHelpDialog() {
+  helpOverlay.classList.add("visible");
+}
+
+function closeHelpDialog() {
+  helpOverlay.classList.remove("visible");
+}
+
 function openInsiderPage() {
   closeVictoryDialog();
   window.location.href = "./insider.html";
@@ -407,6 +429,15 @@ tutorialNext.addEventListener("click", () => {
 tutorialSkip.addEventListener("click", closeTutorial);
 stageContinue.addEventListener("click", handleStageContinue);
 victoryClose.addEventListener("click", openInsiderPage);
+helpOpen.addEventListener("click", openHelpDialog);
+helpClose.addEventListener("click", closeHelpDialog);
+hintNext.addEventListener("click", () => {
+  if (!state.hints.length) {
+    return;
+  }
+  hintIndex = (hintIndex + 1) % state.hints.length;
+  renderHintBox();
+});
 codewordSubmit.addEventListener("click", submitCodeword);
 codewordInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {

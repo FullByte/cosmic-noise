@@ -1,7 +1,3 @@
-function dialDisplay(value) {
-  return String(value).padStart(3, "0");
-}
-
 function renderPatches(listElement, patches) {
   listElement.innerHTML = "";
   if (!patches.length) {
@@ -32,6 +28,35 @@ function highlightPorts(patches) {
   });
 }
 
+function channelToHex(channel, value) {
+  const clamped = Math.max(0, Math.min(255, Math.round(Number(value) || 0)));
+  const hex = clamped.toString(16).padStart(2, "0");
+
+  if (channel === "red") {
+    return `#${hex}0000`;
+  }
+  if (channel === "green") {
+    return `#00${hex}00`;
+  }
+  return `#0000${hex}`;
+}
+
+function channelToPickerHex(channel, value) {
+  const clamped = Math.max(0, Math.min(255, Math.round(Number(value) || 0)));
+  return channelToHex(channel, clamped === 0 ? 1 : clamped);
+}
+
+function readChannelValue(channel, hexColor) {
+  const color = String(hexColor || "#000000").toLowerCase();
+  if (channel === "red") {
+    return parseInt(color.slice(1, 3), 16) || 0;
+  }
+  if (channel === "green") {
+    return parseInt(color.slice(3, 5), 16) || 0;
+  }
+  return parseInt(color.slice(5, 7), 16) || 0;
+}
+
 export function wireControls({ state, onChange, onAddPatch, onClearPatches, onSetLanguage, onToggleAudio, onResetProgress }) {
   const powerSwitch = document.getElementById("power-switch");
   const phaseSwitch = document.getElementById("phase-switch");
@@ -45,10 +70,13 @@ export function wireControls({ state, onChange, onAddPatch, onClearPatches, onSe
   const fineRotaryIndicator = document.getElementById("fine-rotary-indicator");
   const gainRotaryIndicator = document.getElementById("gain-rotary-indicator");
 
-  const dialValue = document.getElementById("dial-value");
-  const dialDown = document.getElementById("dial-down");
-  const dialUp = document.getElementById("dial-up");
-  const dialGroup = document.getElementById("dial-group");
+  const colorGroup = document.getElementById("color-group");
+  const colorRed = document.getElementById("color-red");
+  const colorGreen = document.getElementById("color-green");
+  const colorBlue = document.getElementById("color-blue");
+  const colorRedValue = document.getElementById("color-red-value");
+  const colorGreenValue = document.getElementById("color-green-value");
+  const colorBlueValue = document.getElementById("color-blue-value");
 
   const patchFrom = document.getElementById("patch-from");
   const patchTo = document.getElementById("patch-to");
@@ -60,6 +88,12 @@ export function wireControls({ state, onChange, onAddPatch, onClearPatches, onSe
   const langSelect = document.getElementById("lang-select");
   const audioBtn = document.getElementById("audio-toggle");
   const resetBtn = document.getElementById("reset-progress");
+
+  const colorInputs = {
+    red: { input: colorRed, valueEl: colorRedValue },
+    green: { input: colorGreen, valueEl: colorGreenValue },
+    blue: { input: colorBlue, valueEl: colorBlueValue },
+  };
 
   const rotaryConfig = {
     freq: {
@@ -97,25 +131,27 @@ export function wireControls({ state, onChange, onAddPatch, onClearPatches, onSe
   function stagePolicy() {
     const id = state.stageIndex + 1;
     if (id === 1) {
-      return { dialEnabled: false, patchEnabled: false, maxPatches: 0 };
+      return { colorEnabled: false, patchEnabled: false, maxPatches: 0 };
     }
     if (id === 2) {
-      return { dialEnabled: true, patchEnabled: false, maxPatches: 0 };
+      return { colorEnabled: true, patchEnabled: false, maxPatches: 0 };
     }
     if (id === 3) {
-      return { dialEnabled: true, patchEnabled: true, maxPatches: 1 };
+      return { colorEnabled: true, patchEnabled: true, maxPatches: 1 };
     }
-    return { dialEnabled: true, patchEnabled: true, maxPatches: null };
+    return { colorEnabled: true, patchEnabled: true, maxPatches: null };
   }
 
   function applyStagePolicy() {
     const policy = stagePolicy();
     const reachedPatchLimit = policy.maxPatches !== null && state.controls.patches.length >= policy.maxPatches;
 
-    dialGroup.classList.toggle("locked", !policy.dialEnabled);
-    dialValue.disabled = !policy.dialEnabled;
-    dialDown.disabled = !policy.dialEnabled;
-    dialUp.disabled = !policy.dialEnabled;
+    colorGroup.classList.toggle("locked", !policy.colorEnabled);
+    Object.values(colorInputs).forEach(({ input }) => {
+      if (input) {
+        input.disabled = !policy.colorEnabled;
+      }
+    });
 
     patchGroup.classList.toggle("locked", !policy.patchEnabled);
     patchFrom.disabled = !policy.patchEnabled || reachedPatchLimit;
@@ -124,13 +160,29 @@ export function wireControls({ state, onChange, onAddPatch, onClearPatches, onSe
     patchClear.disabled = !policy.patchEnabled;
   }
 
+  function syncColorChannel(channel) {
+    const key = channel === "red" ? "colorR" : channel === "green" ? "colorG" : "colorB";
+    const entry = colorInputs[channel];
+    const value = Math.max(0, Math.min(255, Math.round(Number(state.controls[key]) || 0)));
+    state.controls[key] = value;
+
+    if (entry.input) {
+      entry.input.value = channelToPickerHex(channel, value);
+    }
+    if (entry.valueEl) {
+      entry.valueEl.textContent = channelToHex(channel, value).toUpperCase();
+    }
+  }
+
   function syncControls() {
     powerSwitch.checked = state.controls.power;
     phaseSwitch.checked = state.controls.phase;
     updateRotaryVisual("freq");
     updateRotaryVisual("fine");
     updateRotaryVisual("gain");
-    dialValue.value = String(state.controls.dial);
+    syncColorChannel("red");
+    syncColorChannel("green");
+    syncColorChannel("blue");
     renderPatches(patchList, state.controls.patches);
     highlightPorts(state.controls.patches);
     applyStagePolicy();
@@ -235,11 +287,15 @@ export function wireControls({ state, onChange, onAddPatch, onClearPatches, onSe
     root.addEventListener("pointerup", endDrag);
     root.addEventListener("pointercancel", endDrag);
 
-    root.addEventListener("wheel", (event) => {
-      event.preventDefault();
-      const dir = event.deltaY > 0 ? -1 : 1;
-      setControlValue(controlKey, state.controls[cfg.key] + dir * cfg.step);
-    }, { passive: false });
+    root.addEventListener(
+      "wheel",
+      (event) => {
+        event.preventDefault();
+        const dir = event.deltaY > 0 ? -1 : 1;
+        setControlValue(controlKey, state.controls[cfg.key] + dir * cfg.step);
+      },
+      { passive: false }
+    );
 
     root.addEventListener("keydown", (event) => {
       if (event.key === "ArrowRight" || event.key === "ArrowUp") {
@@ -261,6 +317,20 @@ export function wireControls({ state, onChange, onAddPatch, onClearPatches, onSe
     });
   }
 
+  function setupColorChannel(channel) {
+    const key = channel === "red" ? "colorR" : channel === "green" ? "colorG" : "colorB";
+    const entry = colorInputs[channel];
+    if (!entry?.input) {
+      return;
+    }
+
+    entry.input.addEventListener("input", () => {
+      state.controls[key] = readChannelValue(channel, entry.input.value);
+      syncColorChannel(channel);
+      onChange();
+    });
+  }
+
   powerSwitch.addEventListener("change", () => {
     state.controls.power = powerSwitch.checked;
     onChange();
@@ -274,25 +344,9 @@ export function wireControls({ state, onChange, onAddPatch, onClearPatches, onSe
   setupRotary("freq");
   setupRotary("fine");
   setupRotary("gain");
-
-  dialDown.addEventListener("click", () => {
-    state.controls.dial = (state.controls.dial + 999) % 1000;
-    dialValue.value = String(state.controls.dial);
-    onChange();
-  });
-
-  dialUp.addEventListener("click", () => {
-    state.controls.dial = (state.controls.dial + 1) % 1000;
-    dialValue.value = String(state.controls.dial);
-    onChange();
-  });
-
-  dialValue.addEventListener("input", () => {
-    const value = Math.max(0, Math.min(999, Number(dialValue.value || 0)));
-    state.controls.dial = Number.isNaN(value) ? 0 : Math.round(value);
-    dialValue.value = String(state.controls.dial);
-    onChange();
-  });
+  setupColorChannel("red");
+  setupColorChannel("green");
+  setupColorChannel("blue");
 
   patchAdd.addEventListener("click", () => {
     const policy = stagePolicy();
