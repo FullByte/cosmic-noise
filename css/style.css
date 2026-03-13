@@ -120,11 +120,6 @@ body {
   padding: 12px;
 }
 
-.control-zone > .hint-box {
-  width: 100%;
-  margin: 0 0 10px;
-}
-
 .section-head {
   display: flex;
   justify-content: space-between;
@@ -786,31 +781,26 @@ label strong {
   font-family: "Space Mono", monospace;
 }
 
-.hint-box {
-  margin: 10px 0;
-  min-height: 0;
+.hint-text {
+  margin: 0;
+  min-height: 4.8em;
+  display: flex;
+  align-items: center;
   border: 1px solid #6f8958;
   border-radius: 8px;
   background:
     repeating-linear-gradient(0deg, rgba(46, 66, 34, 0.1) 0 1px, transparent 1px 3px),
     linear-gradient(180deg, #c6d7b0, #b7c9a1 58%, #a8bb95);
-  padding: 8px;
+  padding: 10px 12px;
   color: #2f4524;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 8px;
-  align-items: center;
 }
 
-.hint-text {
-  margin: 0;
-  min-height: 2.6em;
-  display: flex;
-  align-items: center;
+.hint-card {
+  width: min(94vw, 460px);
 }
 
-.hint-box .small-btn {
-  align-self: stretch;
+.hint-card .actions {
+  margin-top: 14px;
 }
 
 .output-zone .section-head h2,
@@ -879,25 +869,15 @@ label strong {
 }
 
 .help-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  display: block;
   margin-bottom: 14px;
 }
 
 .help-section {
-  padding: 12px;
-  border: 1px solid #35584d;
-  border-radius: 10px;
-  background: rgba(7, 15, 12, 0.78);
-}
-
-.help-section h4 {
-  margin: 0 0 8px;
-  font-family: "Space Mono", monospace;
-  color: var(--accent-hot);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
 }
 
 .help-section p {
@@ -927,14 +907,6 @@ label strong {
 }
 
 @media (max-width: 740px) {
-  .help-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .control-zone > .hint-box {
-    width: 100%;
-  }
-
   .color-grid {
     grid-template-columns: 1fr;
   }

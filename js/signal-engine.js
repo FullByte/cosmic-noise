@@ -74,6 +74,7 @@ function getWeakColorChannels(scores, language, textLookup) {
 export function evaluateSignal(stage, controls, language, textLookup) {
   const target = stage.target;
   const tol = stage.tolerance;
+  const colorEnabled = stage.id > 1;
 
   const powerScore = controls.power === target.power ? 1 : 0;
   const phaseScore = controls.phase === target.phase ? 1 : 0;
@@ -86,14 +87,18 @@ export function evaluateSignal(stage, controls, language, textLookup) {
   const colorScore = (colorRScore + colorGScore + colorBScore) / 3;
   const routeScore = routeMatches(controls.patches, target.routes);
 
+  const weights = colorEnabled
+    ? { power: 0.16, phase: 0.08, freq: 0.14, fine: 0.1, gain: 0.1, color: 0.32, route: 0.1 }
+    : { power: 0.16, phase: 0.08, freq: 0.2, fine: 0.16, gain: 0.16, color: 0.14, route: 0.1 };
+
   const weighted =
-    powerScore * 0.16 +
-    phaseScore * 0.08 +
-    freqScore * 0.2 +
-    fineScore * 0.16 +
-    gainScore * 0.16 +
-    colorScore * 0.14 +
-    routeScore * 0.1;
+    powerScore * weights.power +
+    phaseScore * weights.phase +
+    freqScore * weights.freq +
+    fineScore * weights.fine +
+    gainScore * weights.gain +
+    colorScore * weights.color +
+    routeScore * weights.route;
 
   const clarity = Math.round(clamp01(weighted) * 100);
   const confidence = Math.round(clamp01(weighted * 0.88 + routeScore * 0.12) * 100);
@@ -114,7 +119,7 @@ export function evaluateSignal(stage, controls, language, textLookup) {
     hints.unshift(textLookup("hintPowerOn"));
   }
 
-  if (stage.id > 1 && colorScore < 0.95) {
+  if (colorEnabled && colorScore < 0.95) {
     hints.push(colorScore < 0.5 ? textLookup("hintRgbFar") : textLookup("hintRgbClose"));
     const weakChannels = getWeakColorChannels(
       { colorR: colorRScore, colorG: colorGScore, colorB: colorBScore },

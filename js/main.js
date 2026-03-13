@@ -34,6 +34,7 @@ const debugFit = document.getElementById("debug-fit");
 const debugNoise = document.getElementById("debug-noise");
 const debugCurve = document.getElementById("debug-curve");
 const outputScreen = document.getElementById("signal-output");
+const hintOpen = document.getElementById("hint-open");
 const hintText = document.getElementById("hint-text");
 const hintNext = document.getElementById("hint-next");
 const codewordInput = document.getElementById("codeword-input");
@@ -57,6 +58,8 @@ const victoryBody = document.getElementById("victory-body");
 const victoryClose = document.getElementById("victory-close");
 const helpOverlay = document.getElementById("help-overlay");
 const helpClose = document.getElementById("help-close");
+const hintOverlay = document.getElementById("hint-overlay");
+const hintClose = document.getElementById("hint-close");
 
 let tutorialStep = 0;
 let lastLiveEvalAt = 0;
@@ -104,6 +107,10 @@ function applyLanguage() {
   document.querySelectorAll("[data-i18n]").forEach((node) => {
     const key = node.dataset.i18n;
     node.textContent = langStrings[key] ?? key;
+  });
+
+  document.querySelectorAll("[data-help-lang]").forEach((node) => {
+    node.hidden = node.dataset.helpLang !== state.language;
   });
 
   ui.setLanguageValue(state.language);
@@ -179,10 +186,10 @@ function renderStatus() {
   codewordInput.disabled = !codewordUnlocked;
   codewordSubmit.disabled = !codewordUnlocked;
 
-  renderHintBox();
+  renderHintDialog();
 }
 
-function renderHintBox() {
+function renderHintDialog() {
   const hints = Array.isArray(state.hints) ? state.hints : [];
   const signature = hints.join("||");
   if (signature !== lastHintSignature) {
@@ -407,6 +414,15 @@ function closeHelpDialog() {
   helpOverlay.classList.remove("visible");
 }
 
+function openHintDialog() {
+  renderHintDialog();
+  hintOverlay.classList.add("visible");
+}
+
+function closeHintDialog() {
+  hintOverlay.classList.remove("visible");
+}
+
 function openInsiderPage() {
   closeVictoryDialog();
   window.location.href = "./insider.html";
@@ -454,12 +470,14 @@ stageContinue.addEventListener("click", handleStageContinue);
 victoryClose.addEventListener("click", openInsiderPage);
 helpOpen.addEventListener("click", openHelpDialog);
 helpClose.addEventListener("click", closeHelpDialog);
+hintOpen.addEventListener("click", openHintDialog);
+hintClose.addEventListener("click", closeHintDialog);
 hintNext.addEventListener("click", () => {
   if (!state.hints.length) {
     return;
   }
   hintIndex = (hintIndex + 1) % state.hints.length;
-  renderHintBox();
+  renderHintDialog();
 });
 codewordSubmit.addEventListener("click", submitCodeword);
 codewordInput.addEventListener("keydown", (event) => {

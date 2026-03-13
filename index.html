@@ -26,6 +26,7 @@
                 <option value="de">Deutsch</option>
               </select>
               <button id="help-open" class="small-btn" type="button" data-i18n="helpButton">Hilfe</button>
+              <button id="hint-open" class="small-btn" type="button" data-i18n="hintButton">Tipps</button>
               <button id="audio-toggle" class="small-btn" type="button" data-i18n="audioOff">Audio: Off</button>
               <button id="reset-progress" class="small-btn danger" type="button" data-i18n="resetProgress">Reset</button>
             </div>
@@ -73,10 +74,6 @@
         </section>
 
         <section class="control-zone panel" aria-label="Control Rack">
-          <div id="hint-output" class="hint-box">
-            <p id="hint-text" class="hint-text">...</p>
-            <button id="hint-next" class="small-btn" type="button" data-i18n="hintNextButton">Nächster Tipp</button>
-          </div>
           <div class="section-head">
             <h2 data-i18n="controlRack">Control Rack</h2>
             <span class="stage-chip" id="stage-chip">Stage 1</span>
@@ -242,33 +239,42 @@
 
     <div id="help-overlay" class="tutorial-overlay" role="dialog" aria-modal="true" aria-labelledby="help-title">
       <div class="tutorial-card panel help-card">
-        <h3 id="help-title">Hilfe / Help</h3>
+        <h3 id="help-title" data-i18n="helpTitle">Hilfe</h3>
         <div class="help-grid">
-          <section class="help-section" aria-label="Spielhilfe Deutsch">
-            <h4>Deutsch</h4>
+          <section class="help-section" data-help-lang="de" aria-label="Spielhilfe Deutsch">
             <p>Du entschlüsselst ein Signal, indem du das Steuerpult so nah wie möglich an die Zielkonfiguration der aktuellen Stufe bringst.</p>
             <ul>
               <li>Strom, Phase, Frequenz, Feinabgleich und Verstärkung beeinflussen direkt Klarheit, Rauschen und Wellenform.</li>
               <li>Der Farbcode steuert eine zusätzliche RGB-Störung. Je näher R, G und B am Ziel liegen, desto mehr verschwindet diese Farbstörung aus dem Bild.</li>
               <li>Das Patchfeld wird später freigeschaltet. Nur die richtigen Patchpunkte und Verbindungen helfen, die Stufe sauber zu locken.</li>
-              <li>Oben im Hinweisfeld wird immer nur ein Tipp gezeigt. Mit `Nächster Tipp` kannst du endlos durch alle aktuellen Tipps blättern.</li>
+              <li>Über den Button `Tipps` öffnest du ein Popup. Mit `Nächster Tipp` kannst du dort endlos durch alle aktuellen Hinweise blättern.</li>
               <li>Wenn Klarheit und Konfidenz hoch genug sind, oder du das richtige Codewort erkennst, wird die nächste Stufe freigeschaltet.</li>
             </ul>
           </section>
-          <section class="help-section" aria-label="Game help English">
-            <h4>English</h4>
+          <section class="help-section" data-help-lang="en" aria-label="Game help English">
             <p>You decode the signal by bringing the control rack as close as possible to the target setup of the current stage.</p>
             <ul>
               <li>Power, phase, frequency, fine tune, and gain directly affect clarity, noise, and waveform shape.</li>
               <li>The color code adds an RGB interference layer. The closer R, G, and B are to the target, the more that color interference cancels out.</li>
               <li>The patch panel unlocks later. Only the correct patch points and routes help you lock the stage cleanly.</li>
-              <li>The hint box shows one tip at a time. Use `Next Hint` to cycle endlessly through all current tips.</li>
+              <li>The `Hints` button opens a popup. Use `Next Hint` there to cycle endlessly through all current tips.</li>
               <li>When clarity and confidence are high enough, or you identify the correct codeword, the next stage unlocks.</li>
             </ul>
           </section>
         </div>
         <div class="actions">
-          <button id="help-close" class="primary-btn" type="button">Schließen / Close</button>
+          <button id="help-close" class="primary-btn" type="button" data-i18n="helpClose">Schließen</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="hint-overlay" class="tutorial-overlay" role="dialog" aria-modal="true" aria-labelledby="hint-title">
+      <div class="tutorial-card panel hint-card">
+        <h3 id="hint-title" data-i18n="hintTitle">Hinweise</h3>
+        <p id="hint-text" class="hint-text">...</p>
+        <div class="actions">
+          <button id="hint-close" class="small-btn" type="button" data-i18n="hintDialogClose">Schließen</button>
+          <button id="hint-next" class="primary-btn" type="button" data-i18n="hintNextButton">Nächster Tipp</button>
         </div>
       </div>
     </div>
