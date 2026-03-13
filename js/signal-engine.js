@@ -24,6 +24,23 @@ function routeMatches(current, expected) {
   return clamp01(coverage - noisePenalty);
 }
 
+function getRequiredPatchPorts(routes) {
+  const portOrder = ["ANT", "PRE", "FLT", "DEC"];
+  const ports = new Set();
+
+  for (const route of routes || []) {
+    const [from, to] = String(route).split("->");
+    if (from) {
+      ports.add(from);
+    }
+    if (to) {
+      ports.add(to);
+    }
+  }
+
+  return portOrder.filter((port) => ports.has(port));
+}
+
 export function evaluateSignal(stage, controls, language, textLookup) {
   const target = stage.target;
   const tol = stage.tolerance;
@@ -62,6 +79,11 @@ export function evaluateSignal(stage, controls, language, textLookup) {
     hints.unshift(textLookup("hintClose"));
   } else {
     hints.unshift(textLookup("hintPowerOn"));
+  }
+
+  const requiredPatchPorts = getRequiredPatchPorts(target.routes);
+  if (requiredPatchPorts.length && routeScore < 1) {
+    hints.push(textLookup("hintPatchPorts").replace("{ports}", requiredPatchPorts.join(", ")));
   }
 
   return { clarity, confidence, hints, decoded, completed };

@@ -32,7 +32,7 @@ function highlightPorts(patches) {
   });
 }
 
-export function wireControls({ state, onChange, onAddPatch, onClearPatches, onToggleLang, onToggleAudio, onResetProgress }) {
+export function wireControls({ state, onChange, onAddPatch, onClearPatches, onSetLanguage, onToggleAudio, onResetProgress }) {
   const powerSwitch = document.getElementById("power-switch");
   const phaseSwitch = document.getElementById("phase-switch");
   const freqValue = document.getElementById("freq-value");
@@ -57,7 +57,7 @@ export function wireControls({ state, onChange, onAddPatch, onClearPatches, onTo
   const patchClear = document.getElementById("clear-patches");
   const patchGroup = document.getElementById("patch-group");
 
-  const langBtn = document.getElementById("lang-toggle");
+  const langSelect = document.getElementById("lang-select");
   const audioBtn = document.getElementById("audio-toggle");
   const resetBtn = document.getElementById("reset-progress");
 
@@ -321,7 +321,9 @@ export function wireControls({ state, onChange, onAddPatch, onClearPatches, onTo
     onChange();
   });
 
-  langBtn.addEventListener("click", onToggleLang);
+  langSelect?.addEventListener("change", () => {
+    onSetLanguage(langSelect.value);
+  });
   audioBtn.addEventListener("click", onToggleAudio);
   resetBtn.addEventListener("click", onResetProgress);
 
@@ -343,8 +345,10 @@ export function wireControls({ state, onChange, onAddPatch, onClearPatches, onTo
     setAudioLabel(label) {
       audioBtn.textContent = label;
     },
-    setLangButtonLabel(label) {
-      langBtn.textContent = label;
+    setLanguageValue(value) {
+      if (langSelect) {
+        langSelect.value = value;
+      }
     },
   };
 }

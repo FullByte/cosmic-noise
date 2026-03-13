@@ -83,6 +83,28 @@ body {
   gap: 8px;
 }
 
+.topbar-select {
+  min-width: 112px;
+  border: 1px solid #4f6f64;
+  border-radius: 8px;
+  color: var(--ink-main);
+  background: linear-gradient(180deg, #1e3a30, #12231d);
+  font-family: "Space Mono", monospace;
+  padding: 6px 30px 6px 10px;
+  cursor: pointer;
+}
+
+.topbar-select:hover,
+.topbar-select:focus {
+  box-shadow: 0 0 0 2px var(--glow);
+  outline: none;
+}
+
+.topbar-select option {
+  color: #d7e3d7;
+  background: #12231d;
+}
+
 .main-layout {
   display: grid;
   grid-template-columns: 1.8fr 1fr;
@@ -109,6 +131,11 @@ body {
 .control-zone,
 .output-zone {
   padding: 12px;
+}
+
+.control-zone > .hint-box {
+  width: 100%;
+  margin: 0 0 10px;
 }
 
 .section-head {
@@ -834,6 +861,10 @@ label strong {
 }
 
 @media (max-width: 740px) {
+  .control-zone > .hint-box {
+    width: 100%;
+  }
+
   .switch-bank {
     grid-template-columns: 1fr;
   }

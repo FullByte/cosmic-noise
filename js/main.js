@@ -73,7 +73,7 @@ const ui = wireControls({
   onClearPatches: () => {
     state.controls.patches = [];
   },
-  onToggleLang: toggleLanguage,
+  onSetLanguage: setLanguage,
   onToggleAudio: toggleAudio,
   onResetProgress: resetProgress,
 });
@@ -95,7 +95,7 @@ function applyLanguage() {
     node.textContent = langStrings[key] ?? key;
   });
 
-  ui.setLangButtonLabel(state.language === "de" ? "EN" : "DE");
+  ui.setLanguageValue(state.language);
   ui.setAudioLabel(t(state.language, state.audioEnabled ? "audioOn" : "audioOff"));
 }
 
@@ -287,8 +287,12 @@ function submitCodeword() {
   renderStatus();
 }
 
-function toggleLanguage() {
-  state.language = state.language === "de" ? "en" : "de";
+function setLanguage(nextLanguage) {
+  if (nextLanguage !== "de" && nextLanguage !== "en") {
+    return;
+  }
+
+  state.language = nextLanguage;
   applyLanguage();
   if (stageOverlay.classList.contains("visible")) {
     renderStageBriefing();
