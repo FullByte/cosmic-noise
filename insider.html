@@ -5,23 +5,97 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Insider</title>
 	<link rel="stylesheet" href="css/insider.css">
+	<style>
+		body {
+			font-family: 'Segoe UI', Arial, sans-serif;
+			background: linear-gradient(135deg, #e0e7ff 0%, #f8fafc 100%);
+			margin: 0;
+			padding: 0;
+		}
+		.container {
+			max-width: 900px;
+			margin: 40px auto;
+			background: #fff;
+			border-radius: 18px;
+			box-shadow: 0 8px 32px rgba(60, 60, 120, 0.12);
+			padding: 32px 24px;
+		}
+		h1 {
+			text-align: center;
+			font-size: 2.6em;
+			margin-bottom: 32px;
+			color: #2d3748;
+		}
+		.video-section {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			margin-bottom: 40px;
+		}
+		.video-section iframe {
+			width: 100%;
+			max-width: 900px;
+			height: 510px;
+			border-radius: 16px;
+			box-shadow: 0 4px 16px rgba(60, 60, 120, 0.15);
+		}
+		.downloads {
+			display: flex;
+			flex-direction: column;
+			gap: 24px;
+			margin-top: 24px;
+		}
+		.download-card {
+			background: #f1f5f9;
+			border-radius: 12px;
+			padding: 20px 24px;
+			box-shadow: 0 2px 8px rgba(60, 60, 120, 0.08);
+			display: flex;
+			align-items: center;
+			gap: 18px;
+		}
+		.download-card img {
+			width: 48px;
+			height: 48px;
+		}
+		.download-card a {
+			font-size: 1.2em;
+			color: #2563eb;
+			text-decoration: none;
+			font-weight: 500;
+			transition: color 0.2s;
+		}
+		.download-card a:hover {
+			color: #1e40af;
+		}
+		.download-card .desc {
+			color: #475569;
+			font-size: 1em;
+		}
+	</style>
 </head>
 <body>
-	<h1>Resonanz-Invasions-Theorie</h1>
-	<section>
-		<h2>PDF-Dokument</h2>
-		<embed src="Resonanz-Invasions-Theorie.pdf" type="application/pdf" width="100%" height="600px" />
-		<p>
-			<a href="Resonanz-Invasions-Theorie.pdf" download>PDF herunterladen</a>
-		</p>
-	</section>
-	<section>
-		<h2>PPSX-Datei</h2>
-		<a href="Resonanz-Invasions-Theorie.ppsx" download>PowerPoint-Präsentation herunterladen</a>
-	</section>
-	<section>
-		<h2>YouTube Video</h2>
-		<iframe width="560" height="315" src="https://www.youtube.com/embed/oo4o-G-IbwQ" title="YouTube video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-	</section>
+	<div class="container">
+		<h1>Resonanz-Invasions-Theorie</h1>
+		<div class="video-section">
+			<iframe src="https://www.youtube.com/embed/oo4o-G-IbwQ" title="YouTube video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+		</div>
+		<div class="downloads">
+			<div class="download-card">
+				<img src="https://img.icons8.com/color/48/000000/pdf.png" alt="PDF Icon">
+				<div>
+					<a href="Resonanz-Invasions-Theorie.pdf" download>PDF herunterladen</a>
+					<div class="desc">Das vollständige Dokument als PDF.</div>
+				</div>
+			</div>
+			<div class="download-card">
+				<img src="https://img.icons8.com/color/48/000000/ppt.png" alt="PPTX Icon">
+				<div>
+					<a href="Resonanz-Invasions-Theorie.ppsx" download>PowerPoint-Präsentation herunterladen</a>
+					<div class="desc">Die Präsentation als PPSX-Datei.</div>
+				</div>
+			</div>
+		</div>
+	</div>
 </body>
 </html>
